@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Model Validation Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab:hover { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+        .nav-tab.active { color: #667eea; border-bottom: 3px solid #667eea; background: white; }
+        
+        .tab-content { display: none; padding: 30px; }
+        .tab-content.active { display: block; }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+        }
+        
+        .metric-card h3 { font-size: 0.85em; opacity: 0.9; margin-bottom: 10px; text-transform: uppercase; }
+        .metric-card .value { font-size: 1.8em; font-weight: 700; margin-bottom: 5px; }
+        .metric-card .label { font-size: 0.85em; opacity: 0.8; }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        
+        .chart-title { font-size: 1.3em; font-weight: 600; margin-bottom: 15px; color: #333; }
+        
+        .stat-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-box h4 { color: #667eea; margin-bottom: 10px; font-size: 1.1em; }
+        .stat-box p { color: #495057; margin: 8px 0; line-height: 1.6; }
+        
+        select {
+            padding: 12px 20px;
+            font-size: 1em;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+            min-width: 200px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) { background: #f8f9fa; }
+        
+        .matrix-table td { text-align: center; }
+        
+        .metric-excellent { background: #d4edda !important; color: #155724; font-weight: 600; }
+        .metric-good { background: #fff3cd !important; color: #856404; font-weight: 600; }
+        .metric-poor { background: #f8d7da !important; color: #721c24; font-weight: 600; }
+        
+        .case-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .case-header h3 { color: #667eea; margin-bottom: 10px; }
+        .case-header p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LLM Model Validation Dashboard</h1>
+            <p>AI vs Human Response Comparison Analytics (Demo Data)</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab(0)">Overview</button>
+            <button class="nav-tab" onclick="showTab(1)">Verdict Analysis</button>
+            <button class="nav-tab" onclick="showTab(2)">Demographics</button>
+            <button class="nav-tab" onclick="showTab(3)">Personality</button>
+            <button class="nav-tab" onclick="showTab(4)">Opinion Alignment</button>
+            <button class="nav-tab" onclick="showTab(5)">Distribution Metrics</button>
+            <button class="nav-tab" onclick="showTab(6)">Case Details</button>
+        </div>
+        
+        <div id="tab0" class="tab-content active"></div>
+        <div id="tab1" class="tab-content"></div>
+        <div id="tab2" class="tab-content"></div>
+        <div id="tab3" class="tab-content"></div>
+        <div id="tab4" class="tab-content"></div>
+        <div id="tab5" class="tab-content"></div>
+        <div id="tab6" class="tab-content"></div>
+    </div>
+
+    <script>
+        // Embedded demo data
+        const demoData = generateDemoData();
+        
+        function generateDemoData() {
+            const cases = [];
+            const caseIds = ['C001', 'C002', 'C003', 'C004', 'C005'];
+            
+            caseIds.forEach(caseId => {
+                const humanCount = 15 + Math.floor(Math.random() * 10);
+                const aiCount = 15 + Math.floor(Math.random() * 10);
+                
+                const humanResponses = [];
+                const aiResponses = [];
+                
+                // Generate human responses
+                for (let i = 0; i < humanCount; i++) {
+                    humanResponses.push({
+                        survey_id: caseId,
+                        source: 'human',
+                        verdict: Math.random() > 0.55 ? 1 : 0,
+                        favor_support: Math.floor(Math.random() * 6) + 1,
+                        tipi_extraverted: Math.floor(Math.random() * 5) + 1,
+                        tipi_anxious: Math.floor(Math.random() * 5) + 1,
+                        tipi_open: Math.floor(Math.random() * 5) + 1,
+                        tipi_sympathetic: Math.floor(Math.random() * 5) + 1,
+                        tipi_disorganized: Math.floor(Math.random() * 5) + 1,
+                        education: Math.floor(Math.random() * 8) + 1,
+                        political_party: Math.floor(Math.random() * 4) + 1,
+                        race: Math.floor(Math.random() * 7) + 1,
+                        gender: Math.random() > 0.5 ? 1 : 2,
+                        military: Math.random() > 0.85 ? 1 : 0,
+                        age: 25 + Math.floor(Math.random() * 45),
+                        county: 'Demo County',
+                        state: 'Demo State'
+                    });
+                }
+                
+                // Generate AI responses with slight distribution shift
+                for (let i = 0; i < aiCount; i++) {
+                    aiResponses.push({
+                        survey_id: caseId,
+                        source: 'simulator',
+                        verdict: Math.random() > 0.52 ? 1 : 0, // Slight difference
+                        favor_support: Math.floor(Math.random() * 6) + 1,
+                        tipi_extraverted: Math.min(5, Math.floor(Math.random() * 5) + 1.3), // Slight shift
+                        tipi_anxious: Math.floor(Math.random() * 5) + 1,
+                        tipi_open: Math.floor(Math.random() * 5) + 1,
+                        tipi_sympathetic: Math.min(5, Math.floor(Math.random() * 5) + 1.2),
+                        tipi_disorganized: Math.floor(Math.random() * 5) + 1,
+                        education: Math.floor(Math.random() * 8) + 1,
+                        political_party: Math.floor(Math.random() * 4) + 1,
+                        race: Math.floor(Math.random() * 7) + 1,
+                        gender: Math.random() > 0.5 ? 1 : 2,
+                        military: Math.random() > 0.85 ? 1 : 0,
+                        age: 27 + Math.floor(Math.random() * 43),
+                        county: 'Demo County',
+                        state: 'Demo State'
+                    });
+                }
+                
+                cases.push({ caseId, human: humanResponses, ai: aiResponses });
+            });
+            
+            return cases;
+        }
+        
+        const encodings = {
+            favor_support: {
+                1: "Strongly in favor of Defendant", 2: "In favor of Defendant",
+                3: "Somewhat in favor of Defendant", 4: "Somewhat in favor of Plaintiff",
+                5: "In favor of Plaintiff", 6: "Strongly in favor of Plaintiff"
+            },
+            education: {
+                1: "Less than HS", 2: "HS Diploma", 3: "Some College", 4: "Associate",
+                5: "Bachelor's", 6: "Master's", 7: "Professional", 8: "Doctorate"
+            },
+            race: {
+                1: "White", 2: "Black", 3: "Hispanic", 4: "Asian",
+                5: "Native American", 6: "Pacific Islander", 7: "Multiracial"
+            },
+            gender: { 1: "Male", 2: "Female" },
+            political_party: { 1: "Democrat", 2: "Republican", 3: "Independent", 4: "Other" },
+            military: { 0: "No", 1: "Yes" }
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderOverview();
+            renderVerdicts();
+            renderDemographics();
+            renderPersonality();
+            renderFavorSupport();
+            renderStatisticalComparison();
+            renderCases();
+        });
+        
+        function showTab(n) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab' + n).classList.add('active');
+            document.querySelectorAll('.nav-tab')[n].classList.add('active');
+        }
+        
+        function mean(arr) {
+            const v = arr.filter(x => x != null && !isNaN(x));
+            return v.length ? v.reduce((a,b) => a+b, 0) / v.length : 0;
+        }
+        
+        function std(arr) {
+            const m = mean(arr);
+            const v = arr.filter(x => x != null && !isNaN(x));
+            if (!v.length) return 0;
+            return Math.sqrt(v.reduce((sum, x) => sum + (x - m) ** 2, 0) / v.length);
+        }
+        
+        function jensenShannon(p, q) {
+            if (p.length !== q.length) return 1;
+            const m = p.map((pi, i) => (pi + q[i]) / 2);
+            function kl(prob, ref) {
+                return prob.reduce((sum, pi, i) => {
+                    if (pi === 0) return sum;
+                    return sum + pi * Math.log2(pi / ref[i]);
+                }, 0);
+            }
+            const js = 0.5 * (kl(p, m) + kl(q, m));
+            return Math.sqrt(Math.max(0, js));
+        }
+        
+        function totalVariation(p, q) {
+            if (p.length !== q.length) return 1;
+            return 0.5 * p.reduce((sum, pi, i) => sum + Math.abs(pi - q[i]), 0);
+        }
+        
+        function wasserstein(s1, s2) {
+            if (!s1.length || !s2.length) return 0;
+            const a = [...s1].sort((a,b) => a-b);
+            const b = [...s2].sort((a,b) => a-b);
+            const n = Math.max(a.length, b.length);
+            let d = 0;
+            for (let i = 0; i < n; i++) {
+                const i1 = Math.min(i, a.length - 1);
+                const i2 = Math.min(i, b.length - 1);
+                d += Math.abs(a[i1] - b[i2]);
+            }
+            return d / n;
+        }
+        
+        function getDistributionAlignment(s1, s2, minVal, maxVal) {
+            if (!s1.length || !s2.length) return null;
+            
+            const values = [];
+            for (let v = minVal; v <= maxVal; v++) {
+                values.push(v);
+            }
+            
+            const p = values.map(v => s1.filter(x => x === v).length / s1.length);
+            const q = values.map(v => s2.filter(x => x === v).length / s2.length);
+            
+            const epsilon = 1e-10;
+            const p_smooth = p.map(x => x + epsilon);
+            const q_smooth = q.map(x => x + epsilon);
+            
+            const p_norm = p_smooth.map(x => x / p_smooth.reduce((a,b) => a+b, 0));
+            const q_norm = q_smooth.map(x => x / q_smooth.reduce((a,b) => a+b, 0));
+            
+            return {
+                js: jensenShannon(p_norm, q_norm),
+                tv: totalVariation(p, q),
+                wasserstein: wasserstein(s1, s2)
+            };
+        }
+        
+        function getAlignmentClass(jsScore) {
+            if (jsScore < 0.15) return { class: 'metric-excellent', text: 'Excellent' };
+            if (jsScore < 0.35) return { class: 'metric-good', text: 'Good' };
+            return { class: 'metric-poor', text: 'Poor' };
+        }
+        
+        function renderOverview() {
+            const allHuman = demoData.flatMap(c => c.human);
+            const allAI = demoData.flatMap(c => c.ai);
+            
+            const humanVerdictRate = (allHuman.filter(r => r.verdict === 1).length / allHuman.length * 100).toFixed(1);
+            const aiVerdictRate = (allAI.filter(r => r.verdict === 1).length / allAI.length * 100).toFixed(1);
+            const verdictDiff = Math.abs(humanVerdictRate - aiVerdictRate).toFixed(1);
+            
+            let html = `
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h3>Total Cases</h3>
+                        <div class="value">${demoData.length}</div>
+                        <div class="label">Validation Scenarios</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Human Responses</h3>
+                        <div class="value">${allHuman.length}</div>
+                        <div class="label">Baseline Data</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>AI Responses</h3>
+                        <div class="value">${allAI.length}</div>
+                        <div class="label">Model Predictions</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Human Verdict Rate</h3>
+                        <div class="value">${humanVerdictRate}%</div>
+                        <div class="label">Plaintiff Favorable</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>AI Verdict Rate</h3>
+                        <div class="value">${aiVerdictRate}%</div>
+                        <div class="label">Model Prediction</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Verdict Difference</h3>
+                        <div class="value">${verdictDiff}%</div>
+                        <div class="label">Absolute Gap</div>
+                    </div>
+                </div>
+                
+                <div class="stat-box">
+                    <h4>Model Validation Study</h4>
+                    <p>LLM predictions compared against human baseline across ${demoData.length} jury simulation cases | Metrics: Distribution alignment (JS Divergence), demographic fidelity, personality trait matching</p>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Verdict Distribution by Case</div>
+                    <div id="overview-verdicts"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Sample Size by Case</div>
+                    <div id="overview-samples"></div>
+                </div>
+            `;
+            
+            document.getElementById('tab0').innerHTML = html;
+            
+            // Verdict chart
+            const caseIds = demoData.map(c => c.caseId);
+            const humanVerdicts = demoData.map(c => (c.human.filter(r => r.verdict === 1).length / c.human.length * 100));
+            const aiVerdicts = demoData.map(c => (c.ai.filter(r => r.verdict === 1).length / c.ai.length * 100));
+            
+            Plotly.newPlot('overview-verdicts', [
+                { x: caseIds, y: humanVerdicts, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: caseIds, y: aiVerdicts, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                yaxis: { title: 'Plaintiff Verdict Rate (%)', range: [0, 100] },
+                height: 400
+            }, {responsive: true});
+            
+            // Sample size chart
+            const humanSizes = demoData.map(c => c.human.length);
+            const aiSizes = demoData.map(c => c.ai.length);
+            
+            Plotly.newPlot('overview-samples', [
+                { x: caseIds, y: humanSizes, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: caseIds, y: aiSizes, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                yaxis: { title: 'Sample Size' },
+                height: 400
+            }, {responsive: true});
+        }
+        
+        function renderVerdicts() {
+            const allHuman = demoData.flatMap(c => c.human);
+            const allAI = demoData.flatMap(c => c.ai);
+            
+            const humanPlaintiff = allHuman.filter(r => r.verdict === 1).length;
+            const humanDefendant = allHuman.filter(r => r.verdict === 0).length;
+            const aiPlaintiff = allAI.filter(r => r.verdict === 1).length;
+            const aiDefendant = allAI.filter(r => r.verdict === 0).length;
+            
+            const humanPct = (humanPlaintiff / allHuman.length * 100).toFixed(1);
+            const aiPct = (aiPlaintiff / allAI.length * 100).toFixed(1);
+            
+            let html = `
+                <div class="stat-box">
+                    <h4>Verdict Analysis</h4>
+                    <p>Binary classification: Plaintiff (1) vs Defendant (0) | Distribution comparison</p>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Overall Verdict Distribution</div>
+                    <div id="verdict-overall"></div>
+                </div>
+                
+                <div class="stat-box">
+                    <h4>Verdict Statistics</h4>
+                    <table>
+                        <tr>
+                            <th>Source</th>
+                            <th>Plaintiff</th>
+                            <th>Defendant</th>
+                            <th>Plaintiff %</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Human</strong></td>
+                            <td>${humanPlaintiff}</td>
+                            <td>${humanDefendant}</td>
+                            <td>${humanPct}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI Model</strong></td>
+                            <td>${aiPlaintiff}</td>
+                            <td>${aiDefendant}</td>
+                            <td>${aiPct}%</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Verdict Distribution by Case</div>
+                    <div id="verdict-by-case"></div>
+                </div>
+            `;
+            
+            document.getElementById('tab1').innerHTML = html;
+            
+            Plotly.newPlot('verdict-overall', [
+                {
+                    values: [humanPlaintiff, humanDefendant],
+                    labels: ['Plaintiff', 'Defendant'],
+                    type: 'pie',
+                    name: 'Human',
+                    domain: {x: [0, 0.45]},
+                    marker: {colors: ['#667eea', '#9f7aea']},
+                    textinfo: 'label+percent'
+                },
+                {
+                    values: [aiPlaintiff, aiDefendant],
+                    labels: ['Plaintiff', 'Defendant'],
+                    type: 'pie',
+                    name: 'AI Model',
+                    domain: {x: [0.55, 1]},
+                    marker: {colors: ['#764ba2', '#f093fb']},
+                    textinfo: 'label+percent'
+                }
+            ], {
+                annotations: [
+                    {x: 0.22, y: -0.1, text: 'Human', showarrow: false, font: {size: 14, color: '#667eea'}},
+                    {x: 0.78, y: -0.1, text: 'AI Model', showarrow: false, font: {size: 14, color: '#764ba2'}}
+                ],
+                height: 400,
+                showlegend: false
+            }, {responsive: true});
+            
+            const caseIds = demoData.map(c => c.caseId);
+            const humanByCase = demoData.map(c => c.human.filter(r => r.verdict === 1).length);
+            const aiByCase = demoData.map(c => c.ai.filter(r => r.verdict === 1).length);
+            
+            Plotly.newPlot('verdict-by-case', [
+                { x: caseIds, y: humanByCase, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: caseIds, y: aiByCase, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                yaxis: { title: 'Plaintiff Verdicts (Count)' },
+                height: 400
+            }, {responsive: true});
+        }
+        
+        function renderDemographics() {
+            const allHuman = demoData.flatMap(c => c.human);
+            const allAI = demoData.flatMap(c => c.ai);
+            
+            let html = `
+                <div class="stat-box">
+                    <h4>Demographic Distributions</h4>
+                    <p>Gender, Education, Race, Political Party, Military Service | Model fidelity assessment</p>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Gender Distribution</div>
+                    <div id="demo-gender"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Education Distribution</div>
+                    <div id="demo-education"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Age Distribution</div>
+                    <div id="demo-age"></div>
+                </div>
+            `;
+            
+            document.getElementById('tab2').innerHTML = html;
+            
+            // Gender
+            const genderLabels = Object.values(encodings.gender);
+            const genderKeys = Object.keys(encodings.gender);
+            const humanGender = genderKeys.map(k => allHuman.filter(r => r.gender == k).length);
+            const aiGender = genderKeys.map(k => allAI.filter(r => r.gender == k).length);
+            
+            Plotly.newPlot('demo-gender', [
+                { x: genderLabels, y: humanGender, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: genderLabels, y: aiGender, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                yaxis: { title: 'Count' },
+                height: 400
+            }, {responsive: true});
+            
+            // Education
+            const eduLabels = Object.values(encodings.education);
+            const eduKeys = Object.keys(encodings.education);
+            const humanEdu = eduKeys.map(k => allHuman.filter(r => r.education == k).length);
+            const aiEdu = eduKeys.map(k => allAI.filter(r => r.education == k).length);
+            
+            Plotly.newPlot('demo-education', [
+                { x: eduLabels, y: humanEdu, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: eduLabels, y: aiEdu, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                xaxis: { tickangle: -45 },
+                yaxis: { title: 'Count' },
+                height: 400
+            }, {responsive: true});
+            
+            // Age
+            const humanAges = allHuman.map(r => r.age);
+            const aiAges = allAI.map(r => r.age);
+            
+            Plotly.newPlot('demo-age', [
+                { x: humanAges, type: 'histogram', name: 'Human', marker: {color: '#667eea'}, opacity: 0.7, xbins: {size: 5} },
+                { x: aiAges, type: 'histogram', name: 'AI Model', marker: {color: '#764ba2'}, opacity: 0.7, xbins: {size: 5} }
+            ], {
+                barmode: 'overlay',
+                xaxis: { title: 'Age' },
+                yaxis: { title: 'Count' },
+                height: 400
+            }, {responsive: true});
+        }
+        
+        function renderPersonality() {
+            const allHuman = demoData.flatMap(c => c.human);
+            const allAI = demoData.flatMap(c => c.ai);
+            
+            const traits = [
+                { name: 'Extraverted', field: 'tipi_extraverted' },
+                { name: 'Anxious', field: 'tipi_anxious' },
+                { name: 'Open', field: 'tipi_open' },
+                { name: 'Sympathetic', field: 'tipi_sympathetic' },
+                { name: 'Disorganized', field: 'tipi_disorganized' }
+            ];
+            
+            let html = `
+                <div class="stat-box">
+                    <h4>Personality Trait Distributions (TIPI)</h4>
+                    <p>Ten Item Personality Inventory | 1 (Strongly Disagree) to 5 (Strongly Agree)</p>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Mean Personality Scores</div>
+                    <div id="personality-means"></div>
+                </div>
+            `;
+            
+            traits.forEach((trait, idx) => {
+                html += `
+                    <div class="chart-container">
+                        <div class="chart-title">${trait.name} Distribution</div>
+                        <div id="personality-${idx}"></div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('tab3').innerHTML = html;
+            
+            // Mean scores
+            const traitNames = traits.map(t => t.name);
+            const humanMeans = traits.map(t => mean(allHuman.map(r => r[t.field])));
+            const aiMeans = traits.map(t => mean(allAI.map(r => r[t.field])));
+            
+            Plotly.newPlot('personality-means', [
+                { x: traitNames, y: humanMeans, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: traitNames, y: aiMeans, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                yaxis: { title: 'Mean Score', range: [0, 5] },
+                height: 400
+            }, {responsive: true});
+            
+            // Individual distributions
+            traits.forEach((trait, idx) => {
+                const humanVals = allHuman.map(r => r[trait.field]);
+                const aiVals = allAI.map(r => r[trait.field]);
+                
+                Plotly.newPlot(`personality-${idx}`, [
+                    { x: humanVals, type: 'histogram', name: 'Human', marker: {color: '#667eea'}, opacity: 0.7, 
+                      xbins: {start: 0.5, end: 5.5, size: 1}, histnorm: 'probability' },
+                    { x: aiVals, type: 'histogram', name: 'AI Model', marker: {color: '#764ba2'}, opacity: 0.7,
+                      xbins: {start: 0.5, end: 5.5, size: 1}, histnorm: 'probability' }
+                ], {
+                    barmode: 'overlay',
+                    xaxis: { title: 'Score', dtick: 1 },
+                    yaxis: { title: 'Proportion', tickformat: '.0%' },
+                    height: 350
+                }, {responsive: true});
+            });
+        }
+        
+        function renderFavorSupport() {
+            const allHuman = demoData.flatMap(c => c.human);
+            const allAI = demoData.flatMap(c => c.ai);
+            
+            let html = `
+                <div class="stat-box">
+                    <h4>Opinion Alignment Analysis</h4>
+                    <p>Favor/Support Scale: 1 (Strongly Defendant) to 6 (Strongly Plaintiff)</p>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Favor/Support Distribution</div>
+                    <div id="favor-overall"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title">Mean Scores by Case</div>
+                    <div id="favor-by-case"></div>
+                </div>
+            `;
+            
+            document.getElementById('tab4').innerHTML = html;
+            
+            const labels = Object.values(encodings.favor_support);
+            const keys = Object.keys(encodings.favor_support);
+            const humanCounts = keys.map(k => allHuman.filter(r => r.favor_support == k).length);
+            const aiCounts = keys.map(k => allAI.filter(r => r.favor_support == k).length);
+            
+            Plotly.newPlot('favor-overall', [
+                { x: labels, y: humanCounts, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: labels, y: aiCounts, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                xaxis: { tickangle: -45 },
+                yaxis: { title: 'Count' },
+                height: 400
+            }, {responsive: true});
+            
+            const caseIds = demoData.map(c => c.caseId);
+            const humanByCase = demoData.map(c => mean(c.human.map(r => r.favor_support)));
+            const aiByCase = demoData.map(c => mean(c.ai.map(r => r.favor_support)));
+            
+            Plotly.newPlot('favor-by-case', [
+                { x: caseIds, y: humanByCase, type: 'bar', name: 'Human', marker: {color: '#667eea'} },
+                { x: caseIds, y: aiByCase, type: 'bar', name: 'AI Model', marker: {color: '#764ba2'} }
+            ], {
+                barmode: 'group',
+                yaxis: { title: 'Mean Score', range: [0, 7] },
+                height: 400
+            }, {responsive: true});
+        }
+        
+        function renderStatisticalComparison() {
+            const allHuman = demoData.flatMap(c => c.human);
+            const allAI = demoData.flatMap(c => c.ai);
+            
+            const variables = [
+                { name: 'Favor Support', field: 'favor_support', min: 1, max: 6 },
+                { name: 'TIPI Extraverted', field: 'tipi_extraverted', min: 1, max: 5 },
+                { name: 'TIPI Anxious', field: 'tipi_anxious', min: 1, max: 5 },
+                { name: 'TIPI Open', field: 'tipi_open', min: 1, max: 5 },
+                { name: 'TIPI Sympathetic', field: 'tipi_sympathetic', min: 1, max: 5 },
+                { name: 'TIPI Disorganized', field: 'tipi_disorganized', min: 1, max: 5 }
+            ];
+            
+            let html = `
+                <div class="stat-box">
+                    <h4>Distribution Alignment Metrics</h4>
+                    <p>JS Divergence: 0 = identical, 1 = different | < 0.15 = Excellent, < 0.35 = Good</p>
+                </div>
+                
+                <div class="stat-box">
+                    <h4>Variable Comparison</h4>
+                    <table>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Human Mean</th>
+                            <th>AI Mean</th>
+                            <th>Mean Diff</th>
+                            <th>JS Divergence</th>
+                            <th>TV Distance</th>
+                            <th>Wasserstein</th>
+                            <th>Alignment</th>
+                        </tr>
+            `;
+            
+            variables.forEach(v => {
+                const h = allHuman.map(d => d[v.field]).filter(x => x != null && !isNaN(x));
+                const a = allAI.map(d => d[v.field]).filter(x => x != null && !isNaN(x));
+                
+                const mh = mean(h);
+                const ma = mean(a);
+                const diff = Math.abs(mh - ma);
+                
+                const metrics = getDistributionAlignment(h, a, v.min, v.max);
+                if (!metrics) return;
+                
+                const alignment = getAlignmentClass(metrics.js);
+                
+                html += `
+                    <tr>
+                        <td><strong>${v.name}</strong></td>
+                        <td>${mh.toFixed(2)}</td>
+                        <td>${ma.toFixed(2)}</td>
+                        <td>${diff.toFixed(2)}</td>
+                        <td>${metrics.js.toFixed(4)}</td>
+                        <td>${metrics.tv.toFixed(4)}</td>
+                        <td>${metrics.wasserstein.toFixed(4)}</td>
+                        <td class="${alignment.class}">${alignment.text}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</table></div>`;
+            
+            document.getElementById('tab5').innerHTML = html;
+        }
+        
+        function renderCases() {
+            let html = `
+                <label for="caseSelect"><strong>Select Case:</strong></label>
+                <select id="caseSelect" onchange="updateCase()">
+                    ${demoData.map(c => `<option value="${c.caseId}">${c.caseId}</option>`).join('')}
+                </select>
+                <div id="caseDetail"></div>
+            `;
+            
+            document.getElementById('tab6').innerHTML = html;
+            updateCase();
+        }
+        
+        function updateCase() {
+            const caseId = document.getElementById('caseSelect').value;
+            const caseData = demoData.find(c => c.caseId === caseId);
+            
+            if (!caseData) return;
+            
+            const humanVerdictRate = (caseData.human.filter(r => r.verdict === 1).length / caseData.human.length * 100).toFixed(1);
+            const aiVerdictRate = (caseData.ai.filter(r => r.verdict === 1).length / caseData.ai.length * 100).toFixed(1);
+            
+            const variables = [
+                { name: 'Favor Support', field: 'favor_support', min: 1, max: 6 },
+                { name: 'TIPI Extraverted', field: 'tipi_extraverted', min: 1, max: 5 },
+                { name: 'TIPI Anxious', field: 'tipi_anxious', min: 1, max: 5 },
+                { name: 'TIPI Open', field: 'tipi_open', min: 1, max: 5 },
+                { name: 'TIPI Sympathetic', field: 'tipi_sympathetic', min: 1, max: 5 },
+                { name: 'TIPI Disorganized', field: 'tipi_disorganized', min: 1, max: 5 }
+            ];
+            
+            let html = `
+                <div class="case-header">
+                    <h3>${caseId}</h3>
+                    <p><strong>Sample Sizes:</strong> Human: ${caseData.human.length}, AI: ${caseData.ai.length}</p>
+                    <p><strong>Verdict Rates:</strong> Human: ${humanVerdictRate}%, AI: ${aiVerdictRate}%</p>
+                </div>
+                
+                <div class="stat-box">
+                    <h4>Variable Alignment</h4>
+                    <table>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Human Mean</th>
+                            <th>AI Mean</th>
+                            <th>JS Divergence</th>
+                            <th>Alignment</th>
+                        </tr>
+            `;
+            
+            variables.forEach(v => {
+                const h = caseData.human.map(d => d[v.field]).filter(x => x != null && !isNaN(x));
+                const a = caseData.ai.map(d => d[v.field]).filter(x => x != null && !isNaN(x));
+                
+                const mh = mean(h);
+                const ma = mean(a);
+                
+                const metrics = getDistributionAlignment(h, a, v.min, v.max);
+                if (!metrics) return;
+                
+                const alignment = getAlignmentClass(metrics.js);
+                
+                html += `
+                    <tr>
+                        <td><strong>${v.name}</strong></td>
+                        <td>${mh.toFixed(2)}</td>
+                        <td>${ma.toFixed(2)}</td>
+                        <td>${metrics.js.toFixed(4)}</td>
+                        <td class="${alignment.class}">${alignment.text}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table></div>';
+            
+            variables.forEach((v, idx) => {
+                html += `<div class="chart-container"><div class="chart-title">${v.name}</div><div id="case-var-${idx}"></div></div>`;
+            });
+            
+            document.getElementById('caseDetail').innerHTML = html;
+            
+            variables.forEach((v, idx) => {
+                const h = caseData.human.map(d => d[v.field]).filter(x => x != null && !isNaN(x));
+                const a = caseData.ai.map(d => d[v.field]).filter(x => x != null && !isNaN(x));
+                
+                Plotly.newPlot(`case-var-${idx}`, [
+                    { x: h, type: 'histogram', name: 'Human', marker: {color: '#667eea'}, opacity: 0.7,
+                      xbins: {start: v.min - 0.5, end: v.max + 0.5, size: 1}, histnorm: 'probability' },
+                    { x: a, type: 'histogram', name: 'AI Model', marker: {color: '#764ba2'}, opacity: 0.7,
+                      xbins: {start: v.min - 0.5, end: v.max + 0.5, size: 1}, histnorm: 'probability' }
+                ], {
+                    barmode: 'overlay',
+                    xaxis: { title: v.name, dtick: 1 },
+                    yaxis: { title: 'Proportion', tickformat: '.0%' },
+                    height: 300
+                }, {responsive: true});
+            });
+        }
+    </script>
+</body>
+</html>
