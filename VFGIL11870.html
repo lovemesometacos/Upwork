@@ -462,6 +462,25 @@ strong { font-weight: 600; }
 .continue-btn:hover { background: var(--accent-hover); }
 .continue-btn.show  { display: block; }
 
+.btn-back {
+  padding: 13px 20px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.18s, border-color 0.18s;
+  white-space: nowrap;
+}
+.btn-back:hover {
+  background: var(--bg);
+  border-color: var(--muted);
+}
+
 /* ── Completion ── */
 .completion {
   display: none;
@@ -536,7 +555,9 @@ strong { font-weight: 600; }
           <button class="opt" onclick="tryAnswer(0,this,false)"><span class="opt-letter">D</span>Whether DKA is a life-threatening condition</button>
         </div>
         <div class="feedback" id="fb-0"></div>
-        <button class="continue-btn" id="cont-0" onclick="unlock(1)">Continue to Part 2 →</button>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="continue-btn" id="cont-0" onclick="unlock(1)" style="flex:1; margin:0;">Continue to Part 2 →</button>
+        </div>
       </div>
     </div>
   </div>
@@ -573,8 +594,11 @@ strong { font-weight: 600; }
       <!-- Navigation bar -->
       <div class="flow-nav">
         <div class="flow-counter">Event <span id="flow-current">1</span> of <span>9</span></div>
-        <div style="display:flex; align-items:center; gap:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
           <div class="flow-complete-msg" id="flow-done-msg">✓ All events reviewed</div>
+          <button class="flow-arrow-btn" id="flow-back-btn" onclick="prevFlowStep()" style="display:none; background:var(--muted);">
+            ← Back
+          </button>
           <button class="flow-arrow-btn" id="flow-next-btn" onclick="nextFlowStep()">
             Next →
           </button>
@@ -593,7 +617,10 @@ strong { font-weight: 600; }
             <button class="opt" onclick="tryAnswer(1,this,false)"><span class="opt-letter">D</span>About 1 hour</button>
           </div>
           <div class="feedback" id="fb-1"></div>
-          <button class="continue-btn" id="cont-1" onclick="unlock(2)">Continue to Part 3 →</button>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button class="btn-back" onclick="backToChunk(0)">← Back to Part 1</button>
+            <button class="continue-btn" id="cont-1" onclick="unlock(2)" style="flex:1; margin:0;">Continue to Part 3 →</button>
+          </div>
         </div>
       </div>
 
@@ -636,7 +663,10 @@ strong { font-weight: 600; }
           <button class="opt" onclick="tryAnswer(2,this,false)"><span class="opt-letter">D</span>Whether Jacob had ever been treated for diabetes before this incident</button>
         </div>
         <div class="feedback" id="fb-2"></div>
-        <button class="continue-btn" id="cont-2" onclick="showCompletion()">I have finished reading ✓</button>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="btn-back" onclick="backToChunk(1)">← Back to Part 2</button>
+          <button class="continue-btn" id="cont-2" onclick="showCompletion()" style="flex:1; margin:0;">I have finished reading ✓</button>
+        </div>
       </div>
     </div>
   </div>
@@ -703,6 +733,11 @@ strong { font-weight: 600; }
       document.getElementById('pip-' + currentStep).className = 'pip active';
       renderCard(currentStep);
 
+      // Show back button once we're past step 0
+      if (currentStep > 0) {
+        document.getElementById('flow-back-btn').style.display = 'block';
+      }
+
       // On last step, change button label
       if (currentStep === TOTAL_STEPS - 1) {
         const btn = document.getElementById('flow-next-btn');
@@ -710,14 +745,42 @@ strong { font-weight: 600; }
         btn.style.background = 'var(--done-green)';
       }
     } else {
-      // All done — hide button, show message, reveal question
+      // All done — hide both nav buttons, show message, reveal question
       document.getElementById('flow-next-btn').style.display = 'none';
+      document.getElementById('flow-back-btn').style.display = 'none';
       document.getElementById('flow-done-msg').classList.add('show');
 
       const qw = document.getElementById('q2-wrapper');
       qw.style.display = 'block';
       setTimeout(() => qw.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     }
+  }
+
+  function prevFlowStep() {
+    if (currentStep === 0) return;
+
+    // Mark current pip back to neutral
+    document.getElementById('pip-' + currentStep).className = 'pip';
+    currentStep--;
+
+    document.getElementById('pip-' + currentStep).className = 'pip active';
+    renderCard(currentStep);
+
+    // Hide back button if we're back at step 0
+    if (currentStep === 0) {
+      document.getElementById('flow-back-btn').style.display = 'none';
+    }
+
+    // Reset next button to normal if we moved back from last step
+    const btn = document.getElementById('flow-next-btn');
+    btn.textContent = 'Next →';
+    btn.style.background = 'var(--accent)';
+  }
+
+  function backToChunk(chunkIdx) {
+    // Scroll to specified chunk
+    const target = document.getElementById('chunk-' + chunkIdx);
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   /* ── Quiz logic ── */
