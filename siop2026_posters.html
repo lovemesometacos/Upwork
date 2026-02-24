@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIOP 2026 — Session Network</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0e1a;
+    --panel: #111827;
+    --panel2: #1a2235;
+    --border: #1e2d45;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --accent: #38bdf8;
+
+    --c-ai: #f472b6;
+    --c-lead: #fb923c;
+    --c-dei: #a78bfa;
+    --c-mot: #34d399;
+    --c-meth: #60a5fa;
+    --c-perf: #f87171;
+    --c-health: #4ade80;
+    --c-teams: #fbbf24;
+    --c-sel: #818cf8;
+    --c-train: #2dd4bf;
+    --c-legal: #e879f9;
+    --c-career: #f59e0b;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    background: var(--panel);
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+
+  .logo span { color: var(--text-dim); font-weight: 400; }
+
+  .search-wrap {
+    flex: 1;
+    max-width: 420px;
+    position: relative;
+  }
+
+  #search {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px 8px 36px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--text-dim); }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .stats {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .stats strong { color: var(--text); }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .btn {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--text); }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    overflow: hidden;
+    transition: width 0.3s;
+  }
+  #sidebar.collapsed { width: 0; }
+
+  .sidebar-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .legend {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 12px;
+  }
+  .legend-item:hover { background: var(--panel2); }
+  .legend-item.active { background: var(--panel2); }
+  .legend-item.dimmed { opacity: 0.35; }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-label { flex: 1; }
+  .legend-count { color: var(--text-dim); font-family: 'Space Mono', monospace; font-size: 11px; }
+
+  /* SESSION PANEL */
+  #detail-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .detail-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-dim);
+    text-align: center;
+    gap: 8px;
+  }
+  .detail-placeholder svg { opacity: 0.3; }
+  .detail-placeholder p { font-size: 12px; }
+
+  .session-detail { display: none; }
+  .session-detail.visible { display: block; }
+
+  .detail-topic {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .detail-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  .detail-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    background: var(--panel2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .meta-icon { color: var(--text-dim); width: 14px; text-align: center; }
+  .meta-val { color: var(--text); }
+
+  .detail-id {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* GRAPH */
+  #graph-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #graph { width: 100%; height: 100%; }
+
+  .node circle {
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: r 0.15s;
+  }
+
+  .node:hover circle { stroke-width: 2.5; }
+
+  .node text {
+    pointer-events: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px;
+    fill: rgba(226,232,240,0.8);
+    text-anchor: middle;
+  }
+
+  .link {
+    stroke: #1e3a5f;
+    stroke-opacity: 0.5;
+  }
+
+  .link.highlighted {
+    stroke: var(--accent);
+    stroke-opacity: 1;
+    stroke-width: 2;
+  }
+
+  .node.dimmed circle { opacity: 0.15; }
+  .node.dimmed text { opacity: 0.1; }
+  .node.selected circle { stroke-width: 3; }
+
+  /* Tooltip */
+  #tooltip {
+    position: absolute;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    max-width: 280px;
+    z-index: 100;
+    transition: opacity 0.15s;
+    line-height: 1.4;
+  }
+  #tooltip .tt-title { font-weight: 600; margin-bottom: 4px; }
+  #tooltip .tt-meta { color: var(--text-dim); font-size: 11px; }
+
+  /* Filters bar */
+  .filters-bar {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    background: var(--panel2);
+  }
+
+  .filter-chip {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .filter-chip:hover { opacity: 0.85; }
+
+  .day-filter {
+    background: var(--bg);
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+  .day-filter.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .graph-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: rgba(10,14,26,0.7);
+    padding: 4px 12px;
+    border-radius: 20px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SIOP <span>2026</span> · SESSION MAP</div>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search sessions, topics, keywords…">
+  </div>
+  <div class="stats">
+    <strong id="visible-count">0</strong> / <strong id="total-count">0</strong> sessions
+  </div>
+  <div class="controls">
+    <button class="btn" id="reset-btn">Reset View</button>
+    <button class="btn" id="sidebar-toggle">☰ Legend</button>
+  </div>
+</header>
+
+<div class="main">
+  <div id="sidebar">
+    <div class="sidebar-header">TOPIC DOMAINS</div>
+    <div class="legend" id="legend"></div>
+    <div class="filters-bar">
+      <span style="font-size:11px;color:var(--text-dim);align-self:center;">Day:</span>
+      <button class="filter-chip day-filter active" data-day="all">All Days</button>
+      <button class="filter-chip day-filter" data-day="Thu">Thu Apr 30</button>
+      <button class="filter-chip day-filter" data-day="Fri">Fri May 1</button>
+      <button class="filter-chip day-filter" data-day="Sat">Sat May 2</button>
+    </div>
+    <div id="detail-panel">
+      <div class="detail-placeholder" id="placeholder">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+        </svg>
+        <p>Click any node to<br>view session details</p>
+      </div>
+      <div class="session-detail" id="session-detail"></div>
+    </div>
+  </div>
+
+  <div id="graph-wrap">
+    <svg id="graph"></svg>
+    <div id="tooltip"></div>
+    <div class="graph-hint">Scroll to zoom · Drag to pan · Click node to inspect</div>
+  </div>
+</div>
+
+<script>
+const TOPICS = {
+  "Technology/AI": { color: "var(--c-ai)", short: "AI" },
+  "Leadership": { color: "var(--c-lead)", short: "Lead" },
+  "DEI": { color: "var(--c-dei)", short: "DEI" },
+  "Motivation/Attitudes": { color: "var(--c-mot)", short: "Mot" },
+  "Research Methods": { color: "var(--c-meth)", short: "Meth" },
+  "Job Performance": { color: "var(--c-perf)", short: "Perf" },
+  "Occupational Health": { color: "var(--c-health)", short: "Health" },
+  "Groups/Teams": { color: "var(--c-teams)", short: "Teams" },
+  "Selection/Assessment": { color: "var(--c-sel)", short: "Sel" },
+  "Training/Coaching": { color: "var(--c-train)", short: "Train" },
+  "Legal/Ethics/Global": { color: "var(--c-legal)", short: "Legal" },
+  "Career Development": { color: "var(--c-career)", short: "Career" },
+};
+
+const COLOR_MAP = {};
+Object.entries(TOPICS).forEach(([k, v]) => {
+  // resolve CSS vars to actual hex for d3
+});
+
+// All sessions extracted from PDFs
+const RAW_SESSIONS = [
+  {id:"1385",title:"Decompose Transactional Leadership, Turnover Intention, and Psychological Well-",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"763",title:"April 30, 2026 Situational Strength as a Moderator of Leader Readiness and Leader Development",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"453",title:"April 30, 2026 Claiming Leadership: Agency, Communion, Gender, and Mental Images of Leaders",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1318",title:"April 30, 2026 Stingy Leaders: An Emerging Construct in Destructive Leadership",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1050",title:"April 30, 2026 Redefining Leadership: An Inclusive Evaluation of Leader Behaviors (Session Redefining Leadership: An Inclusive Evaluation of Leader Behaviors",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"323",title:"April 30, 2026 Gendered Pathways From Childhood Leadership Interactions to Managerial Roles",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"697",title:"April 30, 2026 Nontask Organizational Conflict in Transformational Leadership and OCB",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1100",title:"April 30, 2026 Do Ethical Leaders Flourish? The Role of Teamwide Exchange in Leader Well-Being",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1401",title:"April 30, 2026 Interventions for Abusive Supervision From a Self-Control Perspective",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1350",title:"April 30, 2026 Alone at the Table: How Support and Solo Status Shapes Women’s Motivation to",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"966",title:"April 30, 2026 Perception of Female CEOs by White Men in STEM: Competence, Warmth, Dominance, Physic",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1354",title:"April 30, 2026 April 30, 2026 Integrating Traits and Styles: A Holistic Leadership Approach",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"623",title:"April 30, 2026 Setting the Tone: First-Meeting Dynamics on Peer Mentoring Group E!ectiveness",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"750",title:"April 30, 2026 Leadership Development Program Participation in Healthcare Employee Promotion",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"952",title:"April 30, 2026 A Unified Leadership Perceptions Model",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1219",title:"April 30, 2026 Seeking Destruction: Dark Personality, ILTs, and Perception of Destructive Leadership",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1302",title:"April 30, 2026 Forced Citizenship? Interactions Among OCB, CWB, and Abusive Supervision",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"976",title:"April 30, 2026 Does Distance Matter? The E!ects of Leadership Styles Across Work Settings Does Distance Matter? The E!ects of Leadership Styles Across Work Settings",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"93",title:"April 30, 2026 A Review of Women’s Leadership Development: The Path Taken and the Path Forward",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1372",title:"April 30, 2026 Leader Resource Exchanges: The Types and Sources of Leader Resources and Their Relati",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"186",title:"April 30, 2026 Experiences of Leadership From High-Risk Mining: The Voice of Frontline Workers",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"363",title:"April 30, 2026 Exacting Yet Admired: When Perfectionistic Leaders Gain Endorsement and OCB-S",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"550",title:"April 30, 2026 Dyadic Perspectives on Relational Consequences in Leader–Follower Research",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"847",title:"April 30, 2026 Personality and Leadership: A Cross-Cultural Study in the U.S. and Bangladesh",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1319",title:"April 30, 2026 Measuring Leadership Language: Faculty Leadership LIWC Dictionary Validation",topic:"Leadership",day:"Thu",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"880",title:"Detection of AI Usage in the Applicant Cover Letter",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"450",title:"April 30, 2026 Relationship Skills Matter: EI and Sales Performance",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1148",title:"April 30, 2026 Signal of Success: Predicting Multiple Performance Outcomes From Teacher Ratings",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1330",title:"April 30, 2026 Psychometric Properties of Machine Learning Scoring for Situational Judgment",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1360",title:"April 30, 2026 Are SMEs Soft on Soft Skills? Qualities of Hard Versus Soft Skill Workforce Training",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"673",title:"April 30, 2026 Where Is the Tattoo? Visible Forearm Tattoos Do Not Impact Job Interview Ratings",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"998",title:"April 30, 2026 Dynamic and Stable Predictors of Job Search Motivation: A Needs-Based Perspective",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"70",title:"April 30, 2026 Automated Video Interviews: A Systematic Literature Review",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1191",title:"April 30, 2026 Streamlining Time-to-List Established Date for Civil Service Agencies",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1258",title:"April 30, 2026 Investigating E!ectiveness of Item Desirability Matching Using Response Times",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"628",title:"April 30, 2026 Faking Resistance in Hybrid Multidimensional Forced-Choice-Likert Durable Skill",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"434",title:"April 30, 2026 Is There an Optimal Configuration of the Leader-Group Dark Triad?",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"893",title:"April 30, 2026 Navigating the Onboarding Journey: Development of a Social Adjustment New Hires Scale",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"214",title:"April 30, 2026 What’s Important to You? Unifying the Work Values Factor Structure",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1233",title:"April 30, 2026 How Career History and High Potential Status Relate to Business Impact",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"101",title:"April 30, 2026 Validity of Education Requirements Versus Ability Tests: Skills-Based Hiring Wins",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"88",title:"April 30, 2026 The BARS Interrater Reliability Illusion: A Within Versus Between-Panel Comparison",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1234",title:"April 30, 2026 Identifying Distinct Linguistic Styles Among Entrepreneurial Instructors (Session Id Identifying Distinct Linguistic Styles Among Entrepreneurial Instructors",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1364",title:"April 30, 2026 Proof Versus Potential: Sex Biases in the Evaluation of Job Applicants",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"303",title:"April 30, 2026 Recruitment Signals and Inclusive Hiring: The Role of Age, Experience, and Technology",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1030",title:"April 30, 2026 How to Fill in the “What Is Your Desired Salary?” Blank on Job Applications?",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"427",title:"April 30, 2026 Content Validation of a Physical Ability Test for a Sheri!’s Offce",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"838",title:"April 30, 2026 Linking Derailers to Interpersonal Patterns at Work",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"551",title:"April 30, 2026 Who’s Leaving? A Meta-Analysis of Personality and Voluntary Turnover Relations",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"772",title:"April 30, 2026 How Personality, Remote Work Experiences, and Organizational Support Drive Job Outcomes",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"740",title:"April 30, 2026 Di!erences in MBA and LEO Personality: Measurement Invariance and Mean Di!erences",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"687",title:"April 30, 2026 The Digital Career Advisor: Measuring Generative AI’s Role in Job Search",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"443",title:"April 30, 2026 Selection Assessment Information in Job Ads: To Disclose or Not to Disclose?",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"189",title:"April 30, 2026 The E!ect of Probing on Asynchronous Video Interviews’ Validity",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"837",title:"April 30, 2026 I Know What You Prompted Last Summer: Cheating in the Age of Chatbots",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"376",title:"April 30, 2026 Controlling for Bias Does Not Equate Self- and Peer Reports of Personality",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"463",title:"ID 376) April 30, 2026 Balancing Skills and Credentials in Hiring: A Conjoint Analysis",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"600",title:"April 30, 2026 SME-ooth Operator: Expert Di\"culty Estimates in Preemployment Assessment",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"331",title:"April 30, 2026 From Interest Fit to Career Exploration: The Need-Satisfaction Pathway",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"831",title:"April 30, 2026 Compare Two Approaches to Developing Situational Judgement Tests",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"895",title:"April 30, 2026 LLM-Based Emotional Intelligence Assessments: Reliability, Validity, and Bias",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1097",title:"April 30, 2026 Self-Regulatory Demands: Conceptualization and Assessment",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"874",title:"April 30, 2026 Exploring the Validity of Scoring Situational Judgment Tests With Novices",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"547",title:"April 30, 2026 Influence of Political News Consumption on Job Search in a Polarized World",topic:"Selection/Assessment",day:"Thu",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1035",title:"Development and Construct Validation of a Digital Wellness Scale Using AI-GENIE",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"882",title:"April 30, 2026 Do the Stakes Matter? Examining the E!ects of Testing Stakes on Careless Responding",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"674",title:"April 30, 2026 AI-Assisted Thematic Analysis: Using LLMs in Consultant-Led Qualitative Research",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"509",title:"April 30, 2026 Examining the Structure and Temporal Stability of a Compensatory Behavior Measure",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1168",title:"April 30, 2026 Comparing Machine Learning Approaches to Using Items as Predictors in Selection",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"196",title:"April 30, 2026 Capturing the Rhythm of Time: Introducing Dynamic Time Warping in I-O Psychology",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"653",title:"April 30, 2026 Evaluating Paradata Versus Bot Detection Techniques Using AI-Powered Survey Agents",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1392",title:"April 30, 2026 Structural and Affective Influences: A Hypergraph Analysis of Email Sentiment Contagion",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"640",title:"April 30, 2026 Measuring the Commute: Validation of a Multidimensional Commuting Experiences Scale",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"496",title:"April 30, 2026 Relational Variability in Theory-Based Variables Across Organizational Interventions",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"225",title:"April 30, 2026 An Introduction to Continuous-Time Mediation Modeling",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"928",title:"April 30, 2026 April 30, 2026 Topic Modeling as an Alternative to Traditional Job Analysis Methods",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1157",title:"April 30, 2026 When Less Is More: Machine Learning Versus Transformers to Predict CWB for Small Samples",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"401",title:"April 30, 2026 Bystander Active Destructive Behaviors: Scale Development and Validation",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"579",title:"April 30, 2026 Assessing Careless Responding in Situational Judgement Tests",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"164",title:"April 30, 2026 Exploratory Graph Analysis of Job Analysis Data: Insights From Chiropractor Data",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"635",title:"April 30, 2026 Comparing Modern Imputation Methods for Organizational Survey",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"707",title:"When Data Go Missing: Comparing Modern Imputation Methods for Organizational When Data Go Missing: Comparing Modern Imputation Methods for Organizational Survey",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1377",title:"April 30, 2026 Beyond Self-Report: VR Study of Feedback Framing and Abusive Supervision",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"195",title:"April 30, 2026 A Monte Carlo Analysis of the E'cacy of Mantel-Haenszel Bias Detection",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1114",title:"April 30, 2026 The Measurement Accuracy of Profile Correlation as An Index of Person– Environment Fit",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"335",title:"April 30, 2026 Beyond the Likert Scale: Conjoint Analysis of Implicit Leadership Theories",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"755",title:"April 30, 2026 Up, Down, Left, Right: The E!ects of Scale Layout and Design on Survey Responses",topic:"Research Methods",day:"Thu",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1272",title:"Cognitive-Affective Resilience: Maintaining Decision Quality Under Manipulation",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"74",title:"April 30, 2026 A Dual Channel Social Exchange Model of Justice, Support, and Commitment",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"176",title:"April 30, 2026 Stigmatized Conditions in the Workplace: The Role of Political Orientation and Disgust",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"243",title:"April 30, 2026 Work Motives and Organizational Justice Perceptions: Assessing Relative Importance",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"754",title:"April 30, 2026 Comparing the E!ectiveness of Coworkers’ Affiliative Humor Across Mediums",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"197",title:"April 30, 2026 Free Will or Force? How Motivation Shapes the Consequences of Acting Out of Character",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"40",title:"April 30, 2026 The Dark Side of Self-Esteem: How Self-Esteem Fuels Envy in the Job Search Process",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"315",title:"April 30, 2026 When and How Psychological Empowerment Enhances Task Performance?",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"797",title:"April 30, 2026 The Impacts of Feedback Styles on Job Satisfaction and Turnover in the Workplace",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1338",title:"April 30, 2026 Work Ethic as a Predictor of Daily Organizational Citizenship Behavior",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1189",title:"April 30, 2026 Caretaker Motivation and Resources in the Wean-to-Market Phase of Swine Production",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"352",title:"April 30, 2026 Measuring Threat of Technological Unemployment: Scale Development and Validation",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"990",title:"April 30, 2026 Understanding the Stereotypes, Emotions, and Behaviors Toward Introverts at",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"960",title:"April 30, 2026 When Problems Predict Profits: Insights From Anonymous Glassdoor Reviews",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1000",title:"April 30, 2026 Development of the Endorsement of Anti-Corporate Violence Scale",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1292",title:"April 30, 2026 Impact of Horizontal Pay Dispersion on Employees' Well-Being and Social Behaviors",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"517",title:"April 30, 2026 Emotion Trajectory Profiles and Adaptive Performance: A Person-Centered Approach",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"669",title:"April 30, 2026 Me Time on the Move: How Commute Aloneness Bu!ers Stress and Boosts Creativity",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"850",title:"April 30, 2026 Serial Mediation of Neuroticism, Self-E'cacy, Technology Fatigue, and Anxiety",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1116",title:"April 30, 2026 Quitting for a Cause? Political Ideology Fit, Turnover, and Facades of Conformity",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"767",title:"April 30, 2026 Affective Reactions to In-Role Versus Extra-Role Feedback From Supervisors",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"820",title:"April 30, 2026 When Goals Go Public: The Dual E!ects of Goal Sharing on Employee Recipients",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1038",title:"April 30, 2026 Employee Felt Obligation: Role of Source and Type of Treatment and Outcome",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"992",title:"April 30, 2026 When Abuse Varies: Abusive Supervision Variability, Attributions, and Emotional",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1268",title:"April 30, 2026 The Emotional Cost of Being Envied in Workplace",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1084",title:"April 30, 2026 How Does PFIP Affect Employees’ Intrinsic Motivation?",topic:"Motivation/Attitudes",day:"Thu",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"973",title:"Political Affiliation Similarity and Contextual Performance",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"432",title:"Personality and Employee Theft: A Meta-Analysis",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1154",title:"Is Remote Work Inherently Isolating? a Study of Well-Being, Connection and Turnover",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"582",title:"Channels of Influence: Voice Channels and Suggestion Magnitude Impact Implementation",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"800",title:"Interrupting Bias: A Case Study in Improving Faculty Evaluation Processes (Session ID 409) Claiming Prosociality, Excusing Vice: The Dark Side of Communal Narcissism",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1174",title:"Work Value Profiles and Enacted Workplace Aggression: A Person-Centered Perspective",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"593",title:"Perceived EPM Purpose Matters More Than Communicated Purpose",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1248",title:"When the Abused Strike Back: Unethical Retaliation Under Abusive Supervision",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1230",title:"When Feeling Attractive Fuels Creativity: The Role of Psychological Safety at Work",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"537",title:"Evaluating the Normality of Job, Training, and Academic Performance in Small Samples",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"884",title:"I Don’t Want to Hear About My Horoscope! Science Skepticism at Work.",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"61",title:"Apples and Oranges? How ADHD Behavior Is Confused With Low Job Performance",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"565",title:"Perceived Prestige Downward Shift and Turnover Intention Among Aspiring Professionals",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"839",title:"Workplace Gossip’s Double Edge: How Friendship Shapes Belonging",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"423",title:"O!ce Housework, the Big Five Personality, and Work Values",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"929",title:"Networked Trust: Simulating Idea Theft, Leadership, and Creativity",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1183",title:"How Conscientiousness, Inclusion, and Psych Safety Shape Workplace Outcomes How Conscientiousness, Inclusion, and Psych Safety Shape Workplace Outcomes",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"878",title:"Job-Level Confounds in the Measurement of OCB: An O*NET-Based Investigation",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1079",title:"Adaptive Performance: The Link Between Conscientiousness and Employee Engagement",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1160",title:"Curvilinear Link Between Anxiety, Persistence, and Perfectionism’s Moderating",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"633",title:"Measuring the Relationship Between Adaptive Performance and Job Satisfaction",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"85",title:"From Cyberbullying to Quiet Quitting: Meaningful Work as Mediator in Remote Startups",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1053",title:"Trait Self-Control and Performance: Examining the Role of Self-Control Strategies",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"493",title:"Gossip Credibility Shapes Recipients’ Reactions to Negative Gossip Targets",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"933",title:"In the Beholder’s Eye: Perceived Trust Repair After Incivility",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"91",title:"Workplace Sexual Attraction and Its Perceived Reciprocity on OCBIs",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"668",title:"Counterfactual Thinking—a Functional Response Toward Customer Mistreatment",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1111",title:"No Pressure, No Diamonds? A Meta-Analytic Examination of Citizenship Pressure",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1090",title:"A Theory of Social Media Misconduct Among Service Employees",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"145",title:"Do More Anxious People React Negatively to Electronic Performance Management?",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"510",title:"From National Events to Workplace Disruptions: An Uncertainty Reduction Perspective",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1274",title:"Burning Bright or Burning Out: When Do Stars Stay Stars",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"857",title:"Willingness to Report Misconduct: Situational and Individual Factors",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"999",title:"Workplace Factors and Employee Outcomes: Roles of Resilience and Job Control",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"540",title:"Intervening on Incivility: Role of Message and Sender",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1104",title:"Advice Exchange and Job Performance: A Multilevel Social Network Perspective",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"3",title:"Gossip Sending Following Gossip Rumination",topic:"Job Performance",day:"Fri",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"516",title:"AI User Aversion: Consequences for Applicants Who Use ChatGPT",topic:"Technology/AI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"885",title:"April 30, 2026 Validating Generative AI for Scoring Open-Ended Training Assessments",topic:"Selection/Assessment",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"454",title:"April 30, 2026 AI Feedback Aids Skill Acquisition by Reducing Anxiety Depending on Goal Orientation",topic:"Technology/AI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1270",title:"April 30, 2026 When Does Leader Technostress Spill Over? The Protective Role of AI in Taskadaptivity",topic:"Leadership",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1413",title:"April 30, 2026 The Double-Edged Impact of Using Artificial Intelligence for Emotional Labor",topic:"Technology/AI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"282",title:"April 30, 2026 Measuring Performance-Based Emotional Intelligence Through an AI Chatbot",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"322",title:"April 30, 2026 Bridging Declining and Growing Jobs Through AI-Driven Occupational Adjacency Research",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"806",title:"April 30, 2026 Measuring AI Ethicality Within Organizational Contexts: A Scale Adaptation",topic:"Technology/AI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"159",title:"April 30, 2026 Useful but Threatening? GenAI's Double-Edged Impact on Motivation",topic:"Motivation/Attitudes",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"788",title:"April 30, 2026 Initial Validation of AI Evaluation in Open-Ended Role-Play VR Training",topic:"Technology/AI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"918",title:"April 30, 2026 Development of an Ethics Training Module Using Situational Judgment Tests",topic:"Training/Coaching",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"183",title:"April 30, 2026 A Qualitative Investigation of External Team Coaching Practices",topic:"Groups/Teams",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"21",title:"April 30, 2026 An Uncertainty Mindset Intervention During Job Search",topic:"Career Development",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1425",title:"April 30, 2026 Working Alliance and Career Self-E!cacy: The Moderating Role of Employment Anxiety",topic:"Occupational Health",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"472",title:"April 30, 2026 Designing for Transfer: Integrating Embodied Learning in Mixed Reality Training",topic:"Training/Coaching",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"460",title:"April 30, 2026 It Takes Two? How Gender Matching Shapes Coaching Success",topic:"DEI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"198",title:"April 30, 2026 Calling Development: A Systematic Review of Longitudinal Evidence",topic:"Training/Coaching",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"146",title:"April 30, 2026 Why Do Safety Videos About True Stories Discourage Risky Behavior?",topic:"Occupational Health",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"856",title:"April 30, 2026 Toward a Deeper Understanding of Relational Mentoring: A Mixed Methods Study",topic:"Research Methods",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"129",title:"April 30, 2026 The Divergent E'ects of Reality Shock on Newcomer Socialization",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1368",title:"April 30, 2026 Understanding the Role of Team Hierarchy Structures in Organizational Outcomes",topic:"Groups/Teams",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1408",title:"April 30, 2026 How Newcomer Entry Shapes Veteran Employees’ Job Security and Psychological Safety",topic:"Occupational Health",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"729",title:"April 30, 2026 Cross-Sector Brokerage: How Brokerage Orientation Shapes Innovation",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"149",title:"April 30, 2026 Workplace Democracy: Empirical Demonstration of a New Predictor of Turnover Intention",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"105",title:"April 30, 2026 Organizational Signals in Remote Work Policies: A Content Analysis",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"515",title:"April 30, 2026 When Flexible Work Backfires: The Roles of Family Interference, Equity, and Inclusion",topic:"DEI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1128",title:"April 30, 2026 Psychological Safety and the Democracy-Citizenship Behavior Relationship",topic:"Occupational Health",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"906",title:"April 30, 2026 The Cost of Misalignment: Faculty Workload Discrepancies and Organizational Outcomes",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"68",title:"April 30, 2026 The Influence of Remote Work Enabling HRM Practices on Organizational Outcomes",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"971",title:"April 30, 2026 Respectful Workplace Climate Short Scale: Insights and Practical Tradeoffs",topic:"Research Methods",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"165",title:"April 30, 2026 Leader Sexual Harassment Bystander Intervention, Gratitude, and Leader E'ectiveness",topic:"Leadership",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1399",title:"April 30, 2026 Tenure Clock Extensions Harm Tenure Outcomes, Indirectly Impeding Women Faculty",topic:"Leadership",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"912",title:"April 30, 2026 AI Captioning and Hiring Outcomes in Virtual Interviews with Accented Speech",topic:"Selection/Assessment",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1277",title:"April 30, 2026 Menopausal symptom latent profiles: Subtypes of the menopausal workplace experience",topic:"Job Performance",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"859",title:"April 30, 2026 Behind the Cycle – How Hormonal Shifts A'ect Women’s Experiences at Work",topic:"DEI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1345",title:"April 30, 2026 Confronting Bias in Virtual Work: Understanding Allyship and Action",topic:"DEI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1224",title:"April 30, 2026 Recognizing Racism at Work: Cross-race Friendships and Allyship Behaviors",topic:"DEI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1250",title:"April 30, 2026 Voices of Neurodiversity: Text Mining Workplace Experiences During the Pandemic",topic:"DEI",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1159",title:"April 30, 2026 Racial and Performance Dynamics in Informal Managerial Feedback",topic:"Leadership",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1223",title:"April 30, 2026 Navigating Self and Society: The Social Identity Development Model",topic:"Training/Coaching",day:"Thu",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1303",title:"Moderators Affecting Diversity Climate’s Relationship With Positive Work Outcomes",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"660",title:"Gender Experiences With Coping and Appraisal Following Workplace Sexual Harassment",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"521",title:"Neurodiversity at Work: A Scoping Review Using a Biopsychosocial Lens",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"180",title:"Who Applies to Lead? Masculine Leadership Norms and the 60–100% Myth",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"83",title:"Vocational Calling Outcomes for LGBT+ Employees: The Role of Diversity Climate",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1387",title:"When Biases Collide: How Employee Blackness and Beauty Impact Customer Patronage",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"576",title:"Lived Experience With Chronic Pain at Work: A Qualitative Study",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1426",title:"Fathers’ Racial Di!erences in Workplace-Induced Stereotype Threat and Job Outcomes",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"795",title:"To OCB or Not to OCB: The Role of Race and Gender in Shaping Perceptions of Altruism",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"501",title:"Feeling Less, Getting Less: Race-Based Social Pain Bias and Support Gaps at Work",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1266",title:"Exploring Recipients’ Lived Experiences of Allyship",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"922",title:"Hiring Biases Against and Accommodations for People With Speech Di!erences",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"594",title:"Not Jumping on the Bandwagon: Older Workers’ Perceptions of AI Injustice in Selection",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"751",title:"An Investigation of Factors That Influence the Workload Distributions of Faculty",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1119",title:"Beyond the Inbox: Unraveling How Email Communication Impacts Leadership Potential",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1112",title:"Workplace Motivation in Adults With ADHD: A Qualitative Interview Study",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1333",title:"Navigating Digital Transitions in Civil Service Processes via People and Technology",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"67",title:"Organizational Diversity, Equity, and Inclusion Changes and Change Justifications",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"609",title:"Disability Subgroup Di!erences in Selection Assessments: A Meta-Analysis",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"1019",title:"“Let It Go?”: Exploring the Impact of Racial Microaggressions on Well-Being",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"122",title:"The Inclusion of Disability in Diversity Management: A Comparative Review",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"179",title:"Vocational Interests Predict Career Choices in Female-Dominated “HEED” Domains",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"458",title:"Native Americans in STEM: Factors Influencing Underrepresentation and Engagement",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"236",title:"A Brief Empathy Training Module to Improve Sexual Harassment Bystander Intentions",topic:"DEI",day:"Fri",time:"9:00 AM – 9:50 AM",location:"Exhibit Hall"},
+  {id:"24",title:"Organizational Self-Stereotyping: An Idiographic Mixed-Methods Approach",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"572",title:"When Feedback Lingers: Gender Di!erences in Work Rumination",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"746",title:"Checking in on Appreciation: Lessons in Appreciation From the Hotel Industry",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1177",title:"Di!erential E!ects of Negative Personal Attributes on Employee Voice",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"689",title:"Modeling Self-Regulation Theory as a Predictor of Training Performance (Session Modeling Self-Regulation Theory as a Predictor of Training Performance",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"415",title:"Unpacking Organizational Mattering: Predictors Across Employees",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"905",title:"Union Solidarity: A Novel Predictor of Intention to Join Unions",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"502",title:"Basic Psychological Needs, Moral Self-E'cacy, and Workplace Misconduct",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"738",title:"Broken Promises in the Workplace",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"756",title:"Learning in the Flow of Work: Daily Informal Learning, Affect, and Work Outcomes",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"730",title:"Perceptions of Interactional Justice After Leader’s Response to Voice",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"408",title:"Searching for the Practical Utility of Self-Determination Theory: A Computational",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1072",title:"Employees’ Experiences of Work: Emotional, Cognitive, Social, and Personality Factors",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"817",title:"Regulatory Toolbelt: Examining Emotion Regulation With Response Surface Analysis",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"721",title:"Values and Vantage: Moral Foundations as Predictors of AI Self-E'cacy",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"917",title:"Political Will in Action: Shaping Voice, Reputation, and Career Growth",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"995",title:"Cautiously Express Gratitude! When and How Leader Gratitude Expressions Enhances or D",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"936",title:"Two Types of Leader Anger and Follower Cheating: The Role of Moral Decoupling",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"860",title:"From Exchange to Commitment: Gift Giving and Group Identity in Nursing",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1369",title:"Ethical Use of AI: Does Self-E'cacy Play a Role?",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1309",title:"This Could Have Been an Email: Intentional Refrain as a New Form of OCB",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"727",title:"How Boring Is This? Examining Psychometric Properties of the Job Boredom Index",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1327",title:"Person–Environment Femininity Misfit and Employee Well-Being: A Research Proposal",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"268",title:"Activation Dissonance Between Experienced and Displayed Positive Emotions",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"717",title:"Organizational Precursors of the Polarization Mindset",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"1209",title:"How Inconsistent Leader Feedback and Coworker Gossip Shape Employees’ Career Success",topic:"Motivation/Attitudes",day:"Fri",time:"1:00 PM – 1:50 PM",location:"Exhibit Hall"},
+  {id:"172",title:"Empirical Examination of ESM to Promote Inclusive Job Analysis",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1169",title:"E!ects of General and Sexual Aggression on Women Reservists in the US Armed Forces",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1353",title:"Applicant Perceptions of Menstrual Resources: Moderating Role of Menstruation Status",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"459",title:"The Professionalism Paradox: Feminized Traits, Masculine Prototype",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"890",title:"External Personal Network Racial Diversity Improves Predictions of Trust in Teams External Personal Network Racial Diversity Improves Predictions of Trust in Teams",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1236",title:"A Workplace Inclusion Process Model: Do Inclusive Practices Make a Di!erence?",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"244",title:"Invisible Family Load and Job Outcomes: A Systematic Literature Review",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"341",title:"Deal or No Deal: Exploring the E!ect of Role (In)Congruity on NIL Deal Compensation",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"307",title:"Justice and Fairness Perceptions of the Gender, Marital, and Parental Wage Gaps",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"524",title:"The Role of Emotion Management in Intercultural E!ectiveness",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"637",title:"COVID-19 Generation Stereotypes: Perceptions of Social Skills’ Impact on Hireability",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1342",title:"The DEI Domino E!ect: Linking Executive Mandates to Organizational Outcomes",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"672",title:"Stigma Consciousness in Gender-Based Reactions to Workplace Injustice",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"90",title:"Controllability as a Barrier to Deontic Responses on Behalf of LGBT Employees",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"505",title:"Beyond Accommodations: Universal Workplace Design for Inclusion of Autistic Employees",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"120",title:"Predicting Job Satisfaction: Mattering at Work for Autistic Frontline Workers",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"679",title:"Perimenopause and Work Outcomes in Virtual Versus Onsite Work",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"996",title:"Multiracial Identity Theory: Research Applications for I-O",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"355",title:"Ink and Inclusion: How Appearance and Age Bias Shape Respect, Liking, and Job Fit",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"218",title:"Employer-Focused Interventions to Reduce Age Discrimination Against Older Workers",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1305",title:"Resilience and Resistance at the Margins: Ageing Neurodivergent Employees",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"861",title:"Exploring Attitudes About DEI Among Alternative Dispute Resolution Practitioners",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"254",title:"DEI Messaging and Organizational Attractiveness: Does Racism Matter?",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"100",title:"Remote and Part-Time STEM Work: How Justice and Incivility Shape Engagement",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"337",title:"Outcomes of Benevolent Ageism: A Meta-Analysis",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"66",title:"A Conceptual Model of Regret and Support in Stay-Home Parents’ Career Reentry",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"843",title:"PWDs’ Career Strengths: A Comparative Analysis of PWDs and Non-PWDs",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"904",title:"Can She Have It All? Image Maintenance and Supervisor Bias Against Working Mothers",topic:"DEI",day:"Fri",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"246",title:"Gay and Lesbian Discrimination in the Workplace: A Role Congruity Theory Perspective",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"656",title:"Applicant Reactions to Diversity Signals: The Role of Trust in Science",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"264",title:"Coworker Reactions to Disability Accommodation: Performance and Need for Closure",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"601",title:"Caught Between Norms: Age, Gender, and the Paradox of Prescriptive Stereotype",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1002",title:"Exploring How to Mitigate Harmful Stereotypes About Neurodivergent Applicants",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"676",title:"DEI Training Reactions: Role of Socioeconomic Status and Occupational Categories",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"486",title:"Network Perceptions of Asian American Women in Teams",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1206",title:"A Systematic Review of Intersectionality Theory in Workplace Literature",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"285",title:"Masculinity Contest Culture in Medicine and Its Impact on Physician Outcomes",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"94",title:"Students’ Evaluations of Asian Professors With Second Language Accents",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"280",title:"Diversity Statements and Applicant Attraction: Testing a P-O Fit Mediation",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"474",title:"The Double Bind in Hiring: An Experimental Exploration of Applicant Bisexuality",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"545",title:"Boomers, Work, and Retirement: Navigating the Process",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"187",title:"Mentors’ Daily Power Activation Both Harms and Supports Mentees: An ESM Study",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"456",title:"A Deconstructive Analysis of Age Diversity in Higher Education Institutions",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1370",title:"Role of Work Design for Creative Ideas and Beliefs Among Neurodiverse Workers",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1175",title:"Status-Based Distractions: How Social Class Influences Virtual Interview Experiences",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"758",title:"Workplace Friendships: Inclusion, Organizational Identification, Prototypicality",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1068",title:"#Manvsbear: A Content Analysis Exploring Gender Dynamics and Sexual Assault on Tiktok",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"221",title:"How Does the Intersectionality Burnout Inventory Predict Employee Outcomes?",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1082",title:"Examining Organizational and Life Outcomes With SES Profiles",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"657",title:"A Three-Component Conceptualization of Tokenism",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1239",title:"Roe v. Wade Repeal as a Mega-Threat: Women’s Identity Fusion and Disidentification",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"111",title:"Social Class Discrepancy, Negative Affect, and Withdrawal Behaviors",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"256",title:"Managing Menstruation in the Workplace: An Exploratory Qualitative Study",topic:"DEI",day:"Fri",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1341",title:"Key Considerations and Recommendations for Hybrid and Virtual Team Assessment",topic:"Selection/Assessment",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1355",title:"Cultivating Cultural Mindset in Engineering Students in Multicultural Teamwork",topic:"Groups/Teams",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"622",title:"Team Conflict Management Interventions: A Systematic Literature Review",topic:"Leadership",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1186",title:"When Not Everyone Knows Everything: How Team Dynamics Shape Information Exchange",topic:"Groups/Teams",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"926",title:"Team Coaching as a Catalyst for Team Adaptability in VUCA Environments",topic:"Groups/Teams",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"216",title:"E!ective Red Teaming: Psychological Safety’s Role in Malevolent Creativity",topic:"Occupational Health",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"257",title:"The Innovation Equation: The Role of Team Psychological Empowerment and Engagement",topic:"Motivation/Attitudes",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"260",title:"Thinking and Working Together: On Shared Mental Models and Team Performance",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"219",title:"From TMI to Turnover Intent: When Oversharing Urges IPV Employees to Exit",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"305",title:"No Longer the Star: Shifts in Top Performer E!ort Following Team Composition Changes",topic:"Groups/Teams",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"908",title:"Nonverbal Cues of Engagement and Loafing in Ethical Decision-Making Teams",topic:"Motivation/Attitudes",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"984",title:"Examining Interpersonal Complexities in LDSE: The Role of Cultural Diversity and",topic:"DEI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"153",title:"Fair Process and Meeting Equity: Moderating Procedural Communication and Entitativity",topic:"DEI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1291",title:"Exploring Planning and Peer Support Patterns Over Time in Same- and Mixed-Sex",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"457",title:"From Pixels to Presence: Psychological Distance and Groupness in Virtual Workspaces",topic:"Groups/Teams",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"658",title:"AI Meets I-O: Ethical Issues Observed by SIOP Members",topic:"Technology/AI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"972",title:"Discrimination",topic:"DEI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"310",title:"Going Above and Beyond Is the New Minimum: A Meta-Analysis on Citizenship Pressure",topic:"Research Methods",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"95",title:"An Impostor Among Us: Impostor Phenomenon, Ethics, and Sensory Processing Sensitivity",topic:"Legal/Ethics/Global",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1265",title:"A Legal Perspective on Job Analysis: Evidence From Court Cases From 1970 to",topic:"Legal/Ethics/Global",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"814",title:"Integrative Model of Self-Determination Theory and Corporate Social Responsibility",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"864",title:"Contextual Factors’ Impact on AI Ethicality Perceptions, Trust, and Use Intentions",topic:"Technology/AI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1166",title:"Who Cares About Mental Health? CSR Behaviors and the Companies Behind Them",topic:"Occupational Health",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"993",title:"Board Gender Diversity and Environmental Sustainability: A Meta-Analysis",topic:"DEI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"876",title:"Barriers and Resilience in U.S. Foreign-Born Workers’ Careers: A Systematic Review",topic:"Career Development",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1028",title:"Enduring Competence Beliefs: Vocational Self-E'cacy Stability and Change",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1357",title:"Empowerment Mediates W-F Conflict and Well-Being of Pakistani Women Entrepreneurs",topic:"DEI",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"834",title:"“Am I Di!erent?” The Unseen Divide of Communication Overaccommodation and Its Impact",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"200",title:"Unpacking CQ Change: RCT Evidence of Alpha and Beta Changes and Experience E!ects",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"121",title:"So Long, Farewell… the Future of Strategic Employee Exit Management",topic:"Leadership",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"863",title:"E!ects of Situational Rejection on Food Bank Donations",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"374",title:"Drift and Flow: An Evolutionary Framework of Human Capital",topic:"Job Performance",day:"Sat",time:"8:00 AM – 8:50 AM",location:"Exhibit Hall"},
+  {id:"1095",title:"From Experts to LLMs: Validating Open-Ended Scoring in High-Volume Recruitment",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1063",title:"Too Human Like for Comfort: Consumers’ Perceptions of Robotic and Human Servers",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"951",title:"Beyond Psychometrics: AI-Enhanced Approaches to Survey Validation",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"709",title:"Can You Trust in AI? Explanations as a Method to Increase Trustworthiness Perceptions",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"247",title:"No Fine Tuning, Big Gains: Prompt and Model Selection Yield Order-Stable LLM Similarity",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"511",title:"Managers, AI, and Ethical Risk: Use, Promotion, and Dark Triad Traits",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1376",title:"Leaders and AI Informed Decisions: How Reliance on Artificial Intelligence A'ects",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1008",title:"Validating AI Item Ratings: Predictive and Faking-Resistant Dark Personality Items",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1162",title:"Adapt AI Reflect Assessment: Development and Validation of An AI Literacy Scale",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"613",title:"AI Usage at Work: The Interplay of Personality Characteristics and Manager Status",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1419",title:"Active Collaboration or Passive Reliance? How AI Use Transforms the Experience of",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1276",title:"Workers’ Technology Adaptation: A Process Oriented System Dynamics Model",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"896",title:"How Students’ Attitudes Toward AI A'ect Their Career Development",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1299",title:"Generative AI Transformed My Work: Direct and Mediated E'ects on Work Engagement",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"881",title:"The Role of Generative AI at Work in Turnover Intentions",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"747",title:"Evaluating the Capabilities of Large Language Models in the Literature Review Process",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1201",title:"Development of AI Models to Infer Intellect and Cognitive Ability",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"852",title:"Implications of Applicant Perceptions of AI-Driven Personnel Selection",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1064",title:"An Exploratory Study: Using AI Coaching to Improve Leader Skills",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"925",title:"The Role of Training in the Adoption of Artificial Intelligence",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"86",title:"Empowerment or Technostress? AI Adoption and Quiet Quitting in Remote Work",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1220",title:"Prompt and Circumstance: E'ect of Prompt Information on LLM-Generated Prehire Tests",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1192",title:"Integrating AI Into Intelligent Analyst Work: A Job Analysis-Based Review",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1418",title:"Seeking a Prompt Response: A Comparison of AI Tools on a People Analytics Task",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"445",title:"The Automation of Precarity? Algorithmic Insecurity, Wage Theft, and Housing Insecurity",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"768",title:"Exploring Health Insurance Coverage Pre- and Post-COVID With Classification Models",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"803",title:"AI in Personality Testing: Analyzing ChatGPT’s Response Patterns",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1407",title:"Using AI at Work Can Reduce the Experience of Meaning",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"892",title:"The New Social Frontier: How GenAI Is Redefining Social Interactions in the Workplace",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1218",title:"How Workers Leverage AI to Craft Their Jobs: A Longitudinal Qualitative Study",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"931",title:"Reliability of Large Language Model Raters: E'ects of Prompts and Hyperparameters",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"691",title:"Situational Dependency: The Ethical and Technical Rationale for AI-Related Decisions",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1184",title:"The State of GenAI in the Workplace: A Review of Literature",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"357",title:"Developing a Measure of Occupational Exoskeleton Acceptance",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"683",title:"GenAI Ruined Our Study: Inductive Qualitative Methodology Outsmarts Student Samples",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1199",title:"How Orgs. Present AI Matters: Framing E'ects on Emp. Attitudes and Intentions",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"714",title:"Can AI Detect Translation Bias? Examining Embeddings and LLMs",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"899",title:"Uncovering Gender Pay Gap in Large Language Models: Evidence From Resume Evaluation",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"262",title:"That's Definitely AI: Cues for Suspicion of AI Authorship",topic:"Technology/AI",day:"Sat",time:"9:30 AM – 10:20 AM",location:"Exhibit Hall"},
+  {id:"1136",title:"Understanding Voluntary Turnover From an Intentional Change Theory Perspective",topic:"Job Performance",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"512",title:"Tracking the Longitudinal impact of Sexual Harassment Training on Young Workers",topic:"Training/Coaching",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"822",title:"Exploring Police Officer Education and Training Programs",topic:"Training/Coaching",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"168",title:"Leveraging Mixed Virtual Reality to Prepare Leaders for Di!cult Conversations",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"381",title:"Behind the Smiles: How Pretraining Factors Influence Trainee Reactions (Session Behind the Smiles: How Pretraining Factors Influence Trainee Reactions",topic:"Research Methods",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"367",title:"The Influence of Provider Training Participation on Engagement and Patient Experience",topic:"Motivation/Attitudes",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"542",title:"Self-Talk and Leader Identity: The Use of a Mobile Application for Leader Development",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"494",title:"Rethinking Leadership: How Followers Perceive Artificial Intelligence Leaders",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"498",title:"A Meta-Analytic Review of Servant Leadership in Education",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1120",title:"Emotion Validation in Leadership: Implications for Leader Perceptions",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"390",title:"Commanding Chaos: Comparing Competencies Required of Leading Mandas and Crises",topic:"Job Performance",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1351",title:"Burnout Under Narcissistic Supervision: A Job Demands-Resources Model Perspective",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1301",title:"Women’s Motivation to Lead: A Cross-Level Analysis of Team and Cultural Contexts",topic:"DEI",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"819",title:"What Experiences, Capabilities, and Culture Styles Do Stakeholders Value in a CEO?",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"274",title:"Challenge or Threat? When Empowering Leadership Backfires Through Uncertainty",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"192",title:"How Networks Shape Gender Inequality in Leadership: A Computational Process",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"531",title:"Against, Away, or Toward? Leader Dark Side Traits on Change Leadership E'ectiveness",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1235",title:"Leader Impostorism: The Role of Self-Disclosure in Risk Taking and OCB-S",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"778",title:"Conflict-Intelligent Leadership: The Development and Validation of the CIQ-L Scale",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1121",title:"To Get Ahead or Get Along? Exploring the Impact of Charisma on Leadership Behaviors",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"380",title:"The People Side of Leadership: Personality, Emotional Labor, and Well-Being",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1290",title:"Leader and Follower Identity Integration and Escalation of Commitment Decisions",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"677",title:"Neuroinclusive Leadership Coaching: Helping Autistic Leaders Build Social Acuity",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1197",title:"The Intersectional Dilemma: CEO Identity, Strategy, and Divestment in Conflict",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1269",title:"Leading Amidst Chaos: Unlocking Minority Leaders’ Potential",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1210",title:"The Impact of Negative Aspects of Personality on Multirater Leader E'ectiveness",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"38",title:"A Behavioral Measure of Authentic Leadership",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1001",title:"Developing a Dictionary-Based Measure of Leadership Emergence",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1347",title:"Perceptions of Antisocial Behavior in Supervisors",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1380",title:"How Leader Behavioral Integrity Impacts Subordinate Goal Clarity and Job Performance",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"56",title:"E'ect of Leader Immoral Encouragement on Unethical and Citizenship Behavior",topic:"Leadership",day:"Sat",time:"12:30 PM – 1:20 PM",location:"Exhibit Hall"},
+  {id:"1011",title:"From Screen to Science: Finding I-O in TV, Movies, and Games",topic:"Career Development",day:"Sat",time:"3:00 PM – 3:50 PM",location:"R1"},
+  {id:"133",title:"When Vision Should Wait: Why Team Failure Turns Vision Communication Into Distrust",topic:"Motivation/Attitudes",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"560",title:"Intersectional Perceptions of Agency, Communion, and Transformational Leadership Beha",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"347",title:"Who Sees What? How Rater Role Shapes the Link Between Psychometric Data & 360 Ratings",topic:"Research Methods",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"163",title:"Developing a Leadership Risk Taxonomy: Initial Findings",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1049",title:"Returning to Its Roots: A Role Theory-Based Measure of Leader–Member Exchange",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"948",title:"The Path From Stressors to Engagement for Managers in Changing Work Environments",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"794",title:"Examining Leader Emergence Through Social Network and Individual Traits",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1058",title:"Humble or Narcissistic? Experimental Evidence on Leaders and Follower Risk Taking",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"158",title:"Dynamic Structural Ambidexterity in Teams: A Test of Functional Leadership Theory",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1366",title:"Abusive Supervision and Resilience: Multilevel E!ects on Safety and Meaning at",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"685",title:"The Roles of Power and Disclosure Style in Perceptions of PPD Disclosure on The Roles of Power and Disclosure Style in Perceptions of PPD Disclosure on LinkedIn",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"968",title:"The Relationship Between Work and Family Detachment and Worker Well-Being",topic:"Occupational Health",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"846",title:"Cross-Validating the Mindfulness Skill Scale",topic:"Selection/Assessment",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"327",title:"Re-Evaluation of Work Engagement: The Mediating Role of Work Demands",topic:"Motivation/Attitudes",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"548",title:"A Reciprocal Relationship Between Work-Family Conflict Trajectories and Strain",topic:"Training/Coaching",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"292",title:"The Cost of Being Unheard: How Leaders Shape Employee Well-Being Over Time",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"293",title:"Putting Work–Family Conflict Theory to the Test: Evidence From Competing Models",topic:"Selection/Assessment",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"383",title:"The Strong Black Woman Schema and Burnout: A Multidimensional Test Across Two Studies",topic:"Selection/Assessment",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"271",title:"Bystander Reactions: A Review and Future Research Agenda",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"84",title:"Workplace Loneliness: An Examination of Temporal Precedence",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1321",title:"SIFTing Through Decisions: A Computational Model of Information Sharing",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1314",title:"The Cognitive Drivers of Divergent Affective States in Teams",topic:"Groups/Teams",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"248",title:"Curvilinear E!ects of Team Trust on Creativity: Mediating Role of Cognitive Bias",topic:"DEI",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"113",title:"Team Cohesion Revisited: A Quantitative Synthesis of Antecedents and Correlates",topic:"Groups/Teams",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1208",title:"Influential Interactions: Qualitatively Analyzing Emergent Roles in Teams Over",topic:"Groups/Teams",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1396",title:"E!ect of Group Affect Convergence and Divergence on Team Performance",topic:"Groups/Teams",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1076",title:"The E!ect of Multileader Familiarity on Hiring Decisions and MTS Performance",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"419",title:"From Setback to Comback: A Mixed-Method Examination of Team Resilience",topic:"Research Methods",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1323",title:"Leader–Team Perception Incongruence: The Overestimation of Team Communication",topic:"Leadership",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"232",title:"Six Core Competencies: A Synthesis of Entrepreneurial Team Member E!ectiveness",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1331",title:"When Understanding Isn’t Enough: Accent Bias and the Competence Penalty in Hiring",topic:"DEI",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"910",title:"On the Factor Structure of Moral Character Traits: Primary and Meta-Analytic Studies",topic:"Research Methods",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"396",title:"Structured Interviews and Job Performance: A Meta-Analytic Study of Moderators",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"272",title:"Introducing Social Evaluations in Automated Video Interviews: Psychometric Evaluation",topic:"Technology/AI",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"329",title:"Human Versus AI Rater: Evaluation of Open-Ended Situational Judgment Test Responses",topic:"Technology/AI",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"592",title:"Job Hopping as a Predictor of Selection Decisions, Turnover, and Performance",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"346",title:"Powered Up or Power Hungry? Statistical Power in Criterion-Related Validity Studies",topic:"Selection/Assessment",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"825",title:"Updated Meta-AnalysUpdated Meta-Analysis of the Relation Between Cognitive Ability and Job Performance",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"99",title:"Global Mindset and Personality: Competencies and Job Component Validation",topic:"Job Performance",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1283",title:"Score-Use Policies and Dynamic Ability in High-Stakes Cognitive Testing",topic:"Selection/Assessment",day:"Fri",time:"4:00 PM – 4:50 PM",location:"Exhibit Hall"},
+  {id:"1373",title:"Validating the Nomological Net of Work Break Quality: Predictive and Incremental",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"783",title:"Supporting Employees’ Well-Being Via Mobile Well-Being Apps: An Updated Evaluation",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"161",title:"Employee Self-E!cacy and Posttraumatic Growth: A Meta-Analysis",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1055",title:"Illegitimate Tasks and Work Outcomes: A Meta-Analysis",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1122",title:"Developing and Validating a Measure of Quiet Quitting Intentions: Evidence From",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1240",title:"An Investigation of Toxic Work Climates and Women’s Sexual Harassment Experiences",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1179",title:"Balancing Work and Caregiving: Experiences of Parents of Children With Autism",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1374",title:"The Development and Validation of a Sickness Presence Scale",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"290",title:"When Work Follows You Home: A Cross-Cultural Study of the Work–Family Interface",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"821",title:"Increasing Team Member Resilience Factors in a Pediatric Healthcare System",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"708",title:"Whole-Life Careers: Examining Work–Nonwork Balance and Career Development Processes",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"969",title:"Too Tired to Care? Cynicism as a Mechanism Linking Work–Family Conflict to Withdrawal",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1007",title:"How Labor Relations Shape the Safety Impact of High-Performance Work Systems",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1051",title:"Break Length and Recovery in Part-Time Workers: The Moderating Role of Job Demands",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1107",title:"Confirmatory Factor Analysis and Validation of a Work-Related Well-Being Index",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"935",title:"Training Employees as Peer Supporters: An Implementation Logic Model",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"354",title:"Coworker Socializing for Fun and Loneliness: A Social Valuing Perspective",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"167",title:"Integrating Environmental Context Into the E'ort-Recovery Model",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"296",title:"High Potential at Any Age? Roles of Learning Agility, Competence, and Cognition",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"400",title:"Response Distortion in Job Burnout Assessments: A Meta-Analytic Study",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1027",title:"Mitigating Mistreatment: A Meta-Analysis of Emotional Intelligence and Mindfulness",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1287",title:"Prevalence and Impact of Critical Incident Stress in Aquatics",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"841",title:"Experiences of Psychological Recovery From Work in Second-Generation Asian Americans",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"775",title:"Appraisal Discrepancies and Their E'ects on Well-Being and Innovative Work Behavior",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1297",title:"Overworked and Overexposed to Risk: The Impact of Unscheduled Overtime on Injury",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1205",title:"Measuring Conflict and Correlates of Conflict Between Multiple Life Role Domains",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1117",title:"The Role of Appraisal, Coping, and the Dark Tetrad in the Stress–Depression Pathway",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1130",title:"Work-Related Thoughts and Exhaustion: The Role of Anticipation and Rumination",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1256",title:"Approach-Avoidance Job Crafting and Employee Late-Career Development",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"762",title:"When Self-Kindness Quells the Flames of Burnout: A Moderated Mediation Model",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"569",title:"Spousal Parental Leave: Association With Working Mom’s Well-Being and Career Outcomes",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"369",title:"When Leaders Share, Employees Flourish: Emotional Pathways to Well-Being",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"678",title:"A Qualitative Study on Financial Stress and Relative Deprivation",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1054",title:"Economic Stress and Health: Comparing Self-Employed and Organizational Employees",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"142",title:"The Protective Role of Residency Program Community Against Burnout",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1294",title:"Leading Through Illness: Empathy, Empowerment, and Disclosure",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"773",title:"How Morning Reattachment Shapes Daily Work–Life Balance: A Process Model Approach",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"605",title:"Subjective Well-Being Mediates Personality–Sleep Links: Longitudinal Evidence",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"665",title:"Structural Validation of the Pittsburgh Sleep Quality Index via Multidimensional",topic:"Occupational Health",day:"Sat",time:"2:00 PM – 2:50 PM",location:"Exhibit Hall"},
+  {id:"1308",title:"Comparing GGUM-MUPP Calibration Methods Under Varying Intermediate Item Proportions",topic:"Research Methods",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1146",title:"Doing More for Less: Compositional Forced Choice",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"433",title:"Explaining Item Di!culty in Raven’s Progressive Matrices",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1382",title:"Are You Sure? Exploring a Benchmark of LLM Self-Assessments of Accuracy",topic:"Technology/AI",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1282",title:"Item Reduction of Personality Inventory Using Bootstrapping Algorithm",topic:"Technology/AI",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1033",title:"Beyond Detection: Comparing Human and Bot Performance on Fraud Detection Techniques",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"599",title:"Evaluating Facet-Level Measurement of Major Personality Scales Using a Bifactor",topic:"Research Methods",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1334",title:"A Monte Carlo Analysis of Nonprobability Sampling and Post Hoc Corrections",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"872",title:"An IRT Analysis of Work–Family Conflict",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"63",title:"A Network Analysis of Dark Triad Facets and Vocational Interests",topic:"Career Development",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"372",title:"Development and Validation of the Police Sentiment Inventory (PSI",topic:"Selection/Assessment",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"900",title:"Navigating Change: Self-E!cacy's Role in Adaptive Performance",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"399",title:"The Spillover E'ects of Political Interpersonal Conflict on Workplace Deviance",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"923",title:"Is the Feedback Sandwich Tasty? a Systematic Review of Feedback Sign Sequencing",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"124",title:"When Gossip Silences Voice: How Supervisor-Directed Gossip Shapes Depletion and",topic:"Leadership",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"652",title:"Who Wants to Leave? A Meta-Analytic Review of Personality and Turnover Intentions",topic:"Research Methods",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1156",title:"E'ects of Employee Responses to Customer Mistreatment on Well-Being and Commitment",topic:"Occupational Health",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1249",title:"Incivility, Self-Esteem, and Engagement Among Deaf and Hard of Hearing Employees",topic:"Motivation/Attitudes",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"959",title:"The Impact of Subjective Performance Evaluation on Employee Upward Ingratiation",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"499",title:"Negative Work Experience Triggers Sabotage Toward Customers",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1284",title:"When Machines Listen: How AI and Human Disclosure Shape Emotional Labor",topic:"Technology/AI",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"520",title:"Newcomer Feedback-Seeking Behavior: When Supervisor Silence Hurts",topic:"Leadership",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"361",title:"To Know Is to Flow: Testing a Flow Metacognition Intervention on Flow at Work",topic:"Selection/Assessment",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"810",title:"Demands and Drive: A Multiphasic Response Surface Analysis of Display Rules",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1226",title:"Rethinking Employee Recognition: Integrating Theory and Practice",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"78",title:"When Gratitude Is Not Mine: How Coworker-Targeted Leader Gratitude Expressions Shape",topic:"Leadership",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1110",title:"Getting What They Wish for or Not: The Di\"erences in How Leaders’ Expression of",topic:"Leadership",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"694",title:"Navigating the Novelty-Feedback Paradox: How Idea Perception Shapes Feedback Seeking",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"661",title:"How Employees Respond to Daily Restrictions in Remote Work Intensity",topic:"Job Performance",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"65",title:"Does Engagement Drive Results, or Do Results Spark Engagement? A Meta-Analysis",topic:"Motivation/Attitudes",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1037",title:"Shaping Tomorrow’s Practitioners: An Environmental Scan of Applied I-O Programs",topic:"Occupational Health",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"886",title:"Career Transition Decisions: Age Di\"erences in Valuing Fit Versus Prestige",topic:"Career Development",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1211",title:"Lead Well: A Student Leadership Competency Workshop",topic:"Leadership",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1424",title:"More Is Not Always Better: A Temporal Model of Promotions and Pay Raises",topic:"Career Development",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"31",title:"When Does Self-Advancement Advocacy Pay Off?",topic:"Career Development",day:"Sat",time:"3:00 PM – 3:50 PM",location:"Exhibit Hall"},
+  {id:"1182",title:"After the Nest: Testing Conflicting Positive and Negative Pathways From Empty Nesting",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"757",title:"Retiring on Your Own Terms: How Voluntariness Shapes Sleep, Affect, and Satisfaction",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"734",title:"The Detrimental Effects of Ostracism on Career Commitment",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"208",title:"Character Strengths at Work: Congruence Effects on Engagement, Fatigue, Boredom",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1304",title:"Nurse Engagement and Exhaustion: The Role of Recovery and Neuroticism",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"610",title:"Job Resources Foster Responsibility: Roles of Psychological Safety and Identity",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"639",title:"Carrying Work in Your Back Pocket: A Systematic Review of Work-Related Smartphone Use",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"581",title:"What Makes Us Resilient: A Test of Global Versus Situation-Specific Perspectives",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"940",title:"Salient Displays of Negative Affect and Their Impact on Nurses' Well-Being",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"169",title:"Finding the Right Workplace Support for Cancer Patients: Job Insecurity and Well-Being",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1253",title:"Challenge-Hindrance Stressors: The Mediating Role of Resource Gain/Loss",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"295",title:"The Impact of Sexual Orientation, Age, and Prescriptive Stereotype Violations",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"234",title:"Fertility Benefit Certainty and Job Attitudes Across Industry Gender Composition",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"317",title:"Hybrid Work and Physical Health Behaviors",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1101",title:"Burnout Isn't One-Size-Fits-All: Diagnosing Drivers Across Organizations",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"626",title:"Qualitative Insights on Stress and Coping in Air Traffic Control Training",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"561",title:"Meta-Analysis of the Nomological Network of Family Role Performance",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1026",title:"Daily Workload and Evening Detachment: Impact of Supervisor Support for Recovery",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1257",title:"Personal Values and Intervention Process in an Empathy-Based Stress Intervention",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"377",title:"Chronic Job Discrimination and Mortality Risk: Evidence From the MIDUS Study",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1362",title:"Considering Occupations in Event Systems Theory",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1261",title:"ASMR Media as a Biopsychosocial Health and Well-Being Tool",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1113",title:"Do Fair Schedules Matter? Work-Home Conflict and Justice in Emergency Medicine",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"780",title:"Workplace Incivility and Work and Health Outcomes: The Role of Job Embeddedness",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1132",title:"The Evolution of Employee Well-Being: Tracing Conceptual and Methodological Changes",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"59",title:"Who Benefits From Speaking Up? Hierarchical Power and Meeting Satisfaction",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1267",title:"Disentangling Gender From Career Prioritization",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"405",title:"Operationalizing Recovery From Work Stress: Energy Restoration at Its Core",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1032",title:"Expanding the Lens: An Inclusive Review of Family-Building in the Workplace",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"349",title:"Burnout: A Prototypical Approach",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"636",title:"Work, Class, and the Feed: Self-Efficacy and Social Media in Student Burnout",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"564",title:"Who's Driving to and From the Helipad Fatigued?",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"299",title:"Digital Disrespect and Well-Being: An Aging Perspective on Cyber Incivility",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"739",title:"How Parents of Children With Autism Navigate Workplace Discrimination",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1126",title:"Negative Events in a Simulator and Videos as an Intervention for Risky Behavior",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1255",title:"Does Oil and Gas Worker Recovery Predict Fatigue Over the Course of a Hitch?",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"818",title:"Reducing Aggressive Driving: Self-Compassion Buffers Work Stress Through Appraisals",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1389",title:"Different Lives, Different Meanings: How People Define Family and Career Across Group",topic:"Occupational Health",day:"Thu",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"115",title:"Resilience at Work: Personality Predictors and Synthetic Validity",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"962",title:"Uniform Ratings: Factor Structure of Military Academy Recommendation Letters",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"324",title:"Predicting Didactic and Clinical Performance Using the Dental Admission Test",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"360",title:"Try Not to Think About It: A Qualitative Examination of Work Habits",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"835",title:"Comparing the Ratings of Situational and Behavioral Interview Questions",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"348",title:"Generational Differences in Big-5 Personality Traits: Insights From a Global Dataset",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"418",title:"Technological Proficiency: A Competency Model and Classification Framework",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"73",title:"Talent Philosophies, From Exclusive to Inclusive to Hybrid: Concepts and Drivers",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"766",title:"Development of the Multitasking Preference at Work Scale",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1195",title:"Analysis of Candidate Performance: Paper-Pencil Versus Online Multiple-Choice Formats",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"528",title:"Manipulation in Motion: How Dark Triad Traits Shape Perceptions of Team Dynamics",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"118",title:"A 17-Year Longitudinal Study of Correlated Changes in Personality and Work Outcomes",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"606",title:"Can You Learn How to Manage Impressions? Effectiveness of Training Honest Impression",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1251",title:"Measuring Time Management Skill With Game-Based Assessment",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1242",title:"Using Topic Modeling to Uncover Gender Bias in Clinical Psychological Evaluation",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1015",title:"Measuring Computational Thinking: Validation of Composite Scores for Selection",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"645",title:"The BESSI in China: First Validation Beyond WEIRD Contexts Across Diverse Samples",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"330",title:"Meta-Analysis of the Race Gap in College GPA: Implications for Adverse Impact",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"364",title:"Development of a Work Values Situational Judgment Activity for Career Exploration",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"298",title:"Artificial Intelligence in Personnel Selection: A Systematic Literature Review",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1005",title:"I'll Get to It Later: The Role of Personality and Burnout on Work Procrastination",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"407",title:"Using Machine Learning to Gain Prediction and Insights Into Turnover",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"82",title:"Message Characteristics Influencing Accuracy in AI Chatbot Personality Assessment",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1405",title:"Evaluating Open-Ended and Multiple-Choice Questions in Testing for Frontline Jobs",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"97",title:"The Criterion Validity of Interviews Across Time: A Meta-Analysis",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1108",title:"Sound Judgments? Accent, Gender, and Impression Management in Hiring Decisions",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"710",title:"Gender Differences in Psychomotor Ability: A Meta-Analysis",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1247",title:"Latent Profile Analysis of Leader Traits and Behaviors From Multiple Perspectives",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1006",title:"How (Not) to Hire an Academic Couple",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1039",title:"Beyond Engagement: Validation of a Novel Measure of Employee Connection",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"141",title:"Evaluating Predictive Bias of a Residency Situational Judgment Test",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"336",title:"Machiavellianism and Workplace Competition: A Six-Year Longitudinal Study",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"332",title:"The Will and the Ways: Building Career Adaptability Through Interest Fit",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"253",title:"Impression Management in Asynchronous Video Interviews",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"690",title:"Who Joins, Leaves, and Stays in STEM Majors?",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"921",title:"Stable or Accelerated Growth? Unveiling Dynamic Nature of Career Adaptability",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+  {id:"1163",title:"Person-Organization Fit: Espoused-Personal Value Alignment and Applicant Attraction",topic:"Selection/Assessment",day:"Sat",time:"10:30 AM – 11:20 AM",location:"Exhibit Hall"},
+];
+
+// Topic to color mapping
+const TOPIC_COLORS = {
+  "Technology/AI": "#f472b6",
+  "Leadership": "#fb923c",
+  "DEI": "#a78bfa",
+  "Motivation/Attitudes": "#34d399",
+  "Research Methods": "#60a5fa",
+  "Job Performance": "#f87171",
+  "Occupational Health": "#4ade80",
+  "Groups/Teams": "#fbbf24",
+  "Selection/Assessment": "#818cf8",
+  "Training/Coaching": "#2dd4bf",
+  "Legal/Ethics/Global": "#e879f9",
+  "Career Development": "#f59e0b",
+};
+
+const DAY_COLORS = { Thu: "Thursday Apr 30", Fri: "Friday May 1", Sat: "Saturday May 2" };
+
+let sessions = RAW_SESSIONS;
+let activeTopics = new Set(Object.keys(TOPIC_COLORS));
+let activeDay = "all";
+let selectedNode = null;
+let simulation, svg, g, linkSel, nodeSel;
+
+// Build legend
+const legend = document.getElementById("legend");
+const topicCounts = {};
+sessions.forEach(s => topicCounts[s.topic] = (topicCounts[s.topic] || 0) + 1);
+
+Object.entries(TOPIC_COLORS).forEach(([topic, color]) => {
+  const item = document.createElement("div");
+  item.className = "legend-item active";
+  item.dataset.topic = topic;
+  item.innerHTML = `
+    <div class="legend-dot" style="background:${color}"></div>
+    <span class="legend-label">${topic}</span>
+    <span class="legend-count">${topicCounts[topic] || 0}</span>
+  `;
+  item.addEventListener("click", () => toggleTopic(topic, item));
+  legend.appendChild(item);
+});
+
+function toggleTopic(topic, el) {
+  if (activeTopics.has(topic)) {
+    activeTopics.delete(topic);
+    el.classList.remove("active");
+    el.classList.add("dimmed");
+  } else {
+    activeTopics.add(topic);
+    el.classList.add("active");
+    el.classList.remove("dimmed");
+  }
+  updateGraph();
+}
+
+// Day filters
+document.querySelectorAll(".day-filter").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".day-filter").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeDay = btn.dataset.day;
+    updateGraph();
+  });
+});
+
+// Search
+let searchQuery = "";
+document.getElementById("search").addEventListener("input", e => {
+  searchQuery = e.target.value.toLowerCase().trim();
+  updateGraph();
+  if (searchQuery) {
+    setTimeout(() => zoomToSearch(), 400);
+  }
+});
+
+function zoomToSearch() {
+  const matched = sessions.filter(s =>
+    s.title.toLowerCase().includes(searchQuery) ||
+    s.topic.toLowerCase().includes(searchQuery) ||
+    s.id.toLowerCase().includes(searchQuery)
+  );
+  if (!matched.length || !nodeSel) return;
+
+  // Get current positions from simulation nodes
+  const positions = [];
+  nodeSel.each(d => {
+    if (matched.find(m => m.id === d.id)) {
+      positions.push({ x: d.x, y: d.y });
+    }
+  });
+  if (!positions.length) return;
+
+  const xs = positions.map(p => p.x);
+  const ys = positions.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const y0 = Math.min(...ys), y1 = Math.max(...ys);
+
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const pad = 80;
+  const scaleX = (W - pad * 2) / Math.max(x1 - x0, 1);
+  const scaleY = (H - pad * 2) / Math.max(y1 - y0, 1);
+  const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 3);
+  const cx = (x0 + x1) / 2;
+  const cy = (y0 + y1) / 2;
+
+  graphSvg.transition().duration(600).call(
+    zoom.transform,
+    d3.zoomIdentity.translate(W / 2 - scale * cx, H / 2 - scale * cy).scale(scale)
+  );
+}
+
+// Reset
+document.getElementById("reset-btn").addEventListener("click", () => {
+  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+  searchQuery = "";
+  document.getElementById("search").value = "";
+  activeDay = "all";
+  activeTopics = new Set(Object.keys(TOPIC_COLORS));
+  document.querySelectorAll(".legend-item").forEach(el => {
+    el.classList.add("active");
+    el.classList.remove("dimmed");
+  });
+  document.querySelectorAll(".day-filter").forEach(b => b.classList.remove("active"));
+  document.querySelector("[data-day='all']").classList.add("active");
+  graphSvg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+  updateGraph();
+});
+
+// Sidebar toggle
+document.getElementById("sidebar-toggle").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("collapsed");
+});
+
+// Build D3 graph
+const wrap = document.getElementById("graph-wrap");
+const graphSvg = d3.select("#graph");
+const tooltip = document.getElementById("tooltip");
+
+const zoom = d3.zoom()
+  .scaleExtent([0.1, 4])
+  .on("zoom", e => g.attr("transform", e.transform));
+
+graphSvg.call(zoom);
+
+g = graphSvg.append("g");
+
+// Links group & nodes group
+const linkGroup = g.append("g").attr("class", "links");
+const nodeGroup = g.append("g").attr("class", "nodes");
+
+document.getElementById("total-count").textContent = sessions.length;
+
+function sessionMatchesSearch(s) {
+  if (!searchQuery) return true;
+  return s.title.toLowerCase().includes(searchQuery) ||
+    s.topic.toLowerCase().includes(searchQuery) ||
+    s.id.toLowerCase().includes(searchQuery) ||
+    s.time.toLowerCase().includes(searchQuery);
+}
+
+function getFilteredSessions() {
+  return sessions.filter(s => {
+    const matchesTopic = activeTopics.has(s.topic);
+    const matchesDay = activeDay === "all" || s.day === activeDay;
+    return matchesTopic && matchesDay;
+  });
+}
+
+// Specific keyword clusters - narrow and meaningful
+const KEYWORD_GROUPS = [
+  ["burnout", "exhaustion", "depletion"],
+  ["abusive supervision", "abusive leader", "destructive leadership"],
+  ["work-family conflict", "work–family", "work-life balance", "work–nonwork"],
+  ["turnover intention", "voluntary turnover", "quiet quitting"],
+  ["llm", "large language model", "chatgpt", "generative ai", "genai"],
+  ["ai adoption", "ai use", "ai at work", "artificial intelligence"],
+  ["job performance", "task performance", "adaptive performance"],
+  ["psychological safety", "psychologically safe"],
+  ["organizational citizenship", "ocb", "citizenship behavior"],
+  ["dark triad", "narcissism", "narcissistic", "dark personality"],
+  ["feedback seeking", "feedback sign", "feedback framing", "feedback style"],
+  ["team performance", "team cohesion", "team trust", "team resilience"],
+  ["emotional labor", "emotion regulation", "emotional intelligence"],
+  ["intersectionality", "intersectional"],
+  ["sexual harassment", "harassment bystander"],
+  ["remote work", "virtual work", "work from home"],
+  ["personality trait", "big five", "conscientiousness", "neuroticism"],
+  ["meta-analysis", "meta-analytic", "systematic review"],
+  ["scale development", "scale validation", "construct validation"],
+  ["job crafting", "job design", "work design"],
+  ["mentoring", "mentorship", "mentor"],
+  ["pay gap", "wage gap", "pay dispersion", "compensation"],
+  ["neurodiverg", "autism", "adhd", "neurodiversity"],
+  ["situational judgment", "sjt"],
+  ["video interview", "asynchronous interview", "automated interview"],
+  ["self-efficacy", "self-esteem", "self-regulation"],
+  ["incivility", "mistreatment", "workplace aggression"],
+  ["diversity climate", "dei training", "diversity training"],
+  ["age discrimination", "ageism", "older worker"],
+  ["gossip", "rumor"],
+];
+
+const NLP_EDGES = [["581","324",0.194],["1019","1121",0.245],["918","364",0.345],["593","91",0.315],["329","141",0.304],["1318","1035",0.34],["357","1122",0.406],["458","82",0.214],["1063","1033",0.257],["548","969",0.368],["1318","677",0.265],["635","1308",0.352],["565","905",0.26],["623","59",0.241],["926","113",0.236],["1292","31",0.452],["1035","299",0.284],["772","661",0.274],["458","100",0.271],["1331","1101",0.28],["90","1156",0.255],["1357","605",0.352],["952","1120",0.352],["1426","1019",0.288],["839","3",0.446],["1095","1405",0.232],["864","709",0.309],["165","78",0.408],["1305","1002",0.297],["1270","86",0.246],["1265","200",0.227],["323","1182",0.236],["1030","996",0.42],["427","105",0.244],["1258","754",0.267],["674","996",0.242],["763","434",0.301],["493","3",0.574],["443","1097",0.235],["772","810",0.24],["1209","124",0.31],["1354","976",0.299],["1038","959",0.294],["1377","923",0.266],["1368","717",0.234],["443","1321",0.258],["1038","1327",0.264],["1426","780",0.258],["874","364",0.308],["540","299",0.319],["450","637",0.199],["800","1399",0.23],["966","690",0.478],["857","863",0.251],["738","1184",0.355],["661","1026",0.226],["1162","766",0.607],["1128","216",0.37],["896","499",0.228],["910","962",0.441],["176","738",0.36],["214","910",0.418],["1186","1321",0.223],["1354","472",0.258],["1342","676",0.246],["623","645",0.21],["376","935",0.328],["609","400",0.315],["517","900",0.254],["285","819",0.275],["363","407",0.235],["234","1267",0.229],["628","73",0.194],["1258","460",0.282],["1201","710",0.269],["697","872",0.246],["727","714",0.184],["415","200",0.257],["917","921",0.304],["443","1162",0.313],["198","83",0.238],["750","1256",0.225],["609","122",0.241],["369","1182",0.237],["548","1205",0.373],["1183","738",0.281],["1050","1121",0.175],["167","1037",0.215],["738","739",0.256],["1250","738",0.258],["740","599",0.331],["1425","1051",0.202],["1304","405",0.223],["1162","372",0.282],["810","65",0.335],["1370","95",0.251],["172","360",0.255],["755","1156",0.271],["307","1267",0.215],["510","274",0.215],["268","187",0.281],["88","931",0.245],["1372","936",0.338],["885","788",0.386],["1114","1382",0.205],["450","633",0.32],["1210","499",0.285],["511","528",0.354],["432","445",0.245],["427","1068",0.26],["1130","1304",0.392],["1068","1267",0.254],["537","683",0.205],["390","1269",0.594],["352","1015",0.27],["1319","1001",0.359],["926","332",0.206],["1425","569",0.302],["990","637",0.208],["658","511",0.339],["198","923",0.282],["1385","149",0.365],["219","881",0.224],["923","694",0.466],["668","158",0.216],["1351","762",0.277],["904","569",0.242],["1292","1072",0.248],["1095","329",0.239],["1387","959",0.283],["1159","923",0.289],["1408","520",0.269],["960","626",0.283],["433","1282",0.297],["67","200",0.362],["1368","1136",0.216],["63","528",0.298],["847","1301",0.373],["216","610",0.36],["831","874",0.286],["689","905",0.222],["763","364",0.293],["640","1374",0.284],["569","652",0.265],["697","778",0.257],["180","459",0.366],["973","864",0.259],["819","1197",0.256],["1372","542",0.279],["740","886",0.284],["415","115",0.232],["572","1110",0.267],["674","1327",0.226],["926","948",0.233],["1355","984",0.275],["846","1027",0.288],["564","818",0.532],["145","524",0.265],["216","257",0.273],["1287","1117",0.291],["885","1095",0.561],["729","295",0.223],["795","1309",0.304],["565","886",0.234],["908","658",0.417],["153","834",0.321],["1114","1327",0.408],["70","622",0.396],["1107","639",0.251],["1342","1082",0.238],["1233","296",0.415],["1120","330",0.268],["337","310",0.327],["260","1166",0.236],["1287","959",0.223],["884","360",0.433],["1369","900",0.311],["740","609",0.354],["1154","661",0.318],["1186","1323",0.237],["1097","1162",0.242],["689","817",0.22],["501","1110",0.218],["1191","1333",0.471],["1350","197",0.334],["1392","1309",0.221],["454","818",0.246],["540","82",0.305],["683","645",0.211],["307","569",0.245],["459","601",0.245],["1353","852",0.228],["1248","56",0.287],["1050","73",0.234],["850","762",0.336],["1235","1297",0.324],["874","141",0.267],["856","499",0.212],["893","1162",0.359],["775","1117",0.218],["863","1299",0.284],["101","874",0.313],["929","709",0.233],["1235","685",0.361],["1267","1242",0.202],["91","738",0.322],["1177","863",0.25],["327","1253",0.267],["925","494",0.436],["408","814",0.435],["509","962",0.25],["1148","460",0.231],["755","169",0.234],["834","1287",0.344],["1107","665",0.27],["349","1005",0.323],["145","1333",0.173],["1160","248",0.225],["432","161",0.398],["1128","56",0.341],["683","1211",0.262],["1368","906",0.254],["1201","293",0.24],["751","1240",0.232],["971","766",0.246],["337","993",0.398],["1226","1362",0.228],["1354","1256",0.268],["1376","494",0.522],["653","951",0.182],["1276","821",0.217],["415","1054",0.219],["633","900",0.301],["1157","501",0.205],["198","244",0.304],["859","1166",0.243],["763","56",0.243],["383","349",0.238],["1350","1189",0.324],["510","246",0.222],["1318","401",0.274],["183","68",0.26],["837","361",0.194],["1413","494",0.327],["1277","499",0.253],["450","1064",0.205],["998","921",0.342],["1050","800",0.189],["423","721",0.286],["746","234",0.507],["600","1097",0.27],["763","1064",0.203],["952","935",0.219],["264","354",0.217],["376","714",0.242],["995","78",0.808],["396","825",0.287],["635","707",0.877],["545","900",0.307],["1261","780",0.248],["1338","56",0.384],["1224","254",0.267],["860","1290",0.46],["834","1297",0.332],["576","499",0.238],["1401","1377",0.375],["1186","528",0.405],["38","1380",0.358],["38","1049",0.248],["928","24",0.2],["878","795",0.251],["817","524",0.235],["1183","355",0.354],["434","528",0.386],["244","1184",0.432],["628","335",0.215],["968","1026",0.226],["1095","714",0.276],["363","1253",0.225],["1174","1169",0.281],["341","1076",0.262],["1211","636",0.241],["1236","1032",0.258],["100","1051",0.284],["881","1199",0.225],["1287","1257",0.225],["93","198",0.173],["899","293",0.282],["1302","1377",0.244],["352","1239",0.304],["679","168",0.272],["623","376",0.255],["498","652",0.454],["443","1186",0.304],["788","1369",0.301],["1055","118",0.239],["105","661",0.266],["971","83",0.213],["221","1282",0.245],["951","1039",0.277],["550","1247",0.245],["1272","908",0.219],["1424","31",0.454],["803","1208",0.248],["1426","1239",0.291],["1240","1179",0.157],["327","248",0.261],["1116","399",0.255],["609","264",0.255],["1104","354",0.237],["1211","418",0.263],["1063","329",0.269],["335","766",0.237],["966","296",0.213],["303","656",0.227],["1303","396",0.258],["1413","1284",0.315],["1218","678",0.297],["1032","332",0.247],["443","1220",0.209],["717","99",0.348],["257","65",0.273],["244","298",0.457],["1159","1019",0.271],["656","280",0.275],["1001","1049",0.279],["165","1210",0.349],["884","1011",0.492],["352","1374",0.412],["463","1179",0.254],["893","766",0.5],["929","445",0.193],["600","1251",0.257],["633","968",0.299],["926","1323",0.404],["882","1283",0.377],["1305","876",0.192],["1011","169",0.351],["820","1380",0.221],["486","1239",0.216],["788","163",0.282],["912","1076",0.22],["613","82",0.311],["146","1126",0.526],["838","803",0.248],["797","1119",0.226],["668","1387",0.253],["1377","1199",0.229],["1111","310",0.638],["1157","537",0.324],["1377","857",0.226],["197","1084",0.251],["660","512",0.317],["337","825",0.442],["1345","1331",0.27],["172","73",0.221],["565","95",0.241],["159","474",0.212],["817","810",0.436],["268","1182",0.243],["852","298",0.354],["594","852",0.236],["280","762",0.278],["852","1120",0.346],["729","257",0.327],["971","408",0.297],["400","652",0.279],["225","928",0.302],["272","253",0.288],["61","1347",0.264],["515","67",0.389],["99","581",0.247],["1364","1002",0.204],["1233","1007",0.259],["622","298",0.379],["146","1128",0.259],["905","592",0.269],["85","661",0.351],["747","899",0.411],["756","679",0.243],["1053","900",0.25],["91","1163",0.265],["142","349",0.226],["327","65",0.27],["738","246",0.285],["163","1297",0.393],["1377","1248",0.28],["825","1283",0.238],["501","1146",0.302],["195","1033",0.287],["1401","992",0.411],["509","84",0.247],["68","661",0.313],["176","454",0.276],["1401","1366",0.303],["1008","1282",0.235],["1195","1247",0.263],["486","841",0.21],["1376","925",0.392],["814","610",0.233],["521","1261",0.3],["113","1205",0.254],["423","348",0.403],["1154","1039",0.286],["551","652",0.31],["164","347",0.302],["1189","159",0.292],["1425","904",0.245],["225","1242",0.237],["1116","85",0.319],["305","1132",0.205],["581","1247",0.228],["928","861",0.216],["254","676",0.247],["1038","1177",0.278],["1385","219",0.221],["310","1055",0.305],["355","886",0.292],["1331","1108",0.37],["1183","758",0.314],["674","1095",0.226],["565","149",0.291],["454","729",0.223],["153","59",0.264],["859","1240",0.33],["331","364",0.278],["572","923",0.377],["825","710",0.441],["1130","639",0.267],["1160","347",0.3],["708","766",0.224],["1192","778",0.303],["521","1032",0.356],["331","1117",0.214],["317","73",0.291],["1364","1387",0.257],["1192","167",0.361],["763","1050",0.24],["896","940",0.214],["1292","783",0.276],["846","766",0.239],["767","1038",0.288],["906","775",0.248],["502","738",0.245],["1341","1162",0.302],["788","1095",0.274],["348","710",0.301],["576","678",0.264],["329","581",0.245],["405","818",0.238],["1114","1163",0.254],["1360","101",0.296],["303","105",0.2],["1308","433",0.33],["450","882",0.174],["878","1373",0.197],["1019","940",0.295],["1000","1374",0.308],["1100","1049",0.324],["1001","794",0.225],["1148","1195",0.323],["1239","1197",0.241],["992","1366",0.343],["582","381",0.239],["1055","97",0.29],["1030","757",0.316],["993","710",0.39],["355","456",0.224],["637","1002",0.205],["1235","1058",0.357],["660","1117",0.39],["1090","636",0.301],["244","923",0.33],["453","560",0.467],["755","1370",0.232],["1186","1220",0.181],["1111","396",0.212],["1160","1425",0.392],["968","548",0.584],["74","860",0.398],["754","1210",0.305],["3","124",0.609],["1076","592",0.367],["24","168",0.253],["1305","115",0.218],["331","264",0.229],["282","1251",0.261],["460","677",0.21],["540","1249",0.23],["1368","1323",0.291],["1299","327",0.373],["1369","511",0.285],["1162","778",0.505],["747","931",0.378],["176","973",0.273],["453","800",0.185],["196","272",0.209],["893","545",0.354],["1341","73",0.333],["797","738",0.26],["976","882",0.201],["101","463",0.305],["839","124",0.584],["274","1253",0.214],["1314","1101",0.257],["929","216",0.275],["94","841",0.377],["708","773",0.399],["374","361",0.505],["609","337",0.336],["550","516",0.227],["1399","486",0.233],["707","24",0.289],["576","1266",0.245],["657","99",0.337],["880","613",0.368],["164","960",0.24],["502","161",0.249],["454","923",0.276],["337","1027",0.325],["952","1347",0.264],["1183","1007",0.254],["605","118",0.239],["1373","1051",0.182],["496","754",0.21],["747","1184",0.297],["1191","1090",0.265],["859","381",0.272],["795","1235",0.326],["820","1038",0.251],["581","348",0.252],["120","677",0.235],["976","450",0.249],["1299","881",0.481],["952","762",0.268],["904","1026",0.215],["1236","758",0.309],["1248","1351",0.296],["105","68",0.321],["1107","1130",0.271],["1303","548",0.253],["305","234",0.228],["687","547",0.342],["432","337",0.419],["834","1323",0.386],["1038","1132",0.297],["763","794",0.189],["628","1146",0.347],["322","1218",0.227],["1294","1284",0.22],["192","1267",0.289],["754","524",0.303],["401","778",0.319],["1265","1351",0.25],["337","561",0.341],["971","1303",0.23],["105","1068",0.306],["880","195",0.248],["1256","1267",0.296],["434","63",0.422],["721","115",0.266],["432","929",0.32],["912","922",0.376],["1206","221",0.289],["93","1399",0.193],["1374","766",0.548],["593","145",0.302],["1111","400",0.215],["1387","922",0.24],["195","1334",0.617],["196","1251",0.288],["456","822",0.282],["1373","561",0.238],["94","896",0.2],["547","582",0.266],["952","560",0.28],["922","505",0.204],["133","167",0.22],["1028","161",0.228],["1314","73",0.289],["83","90",0.418],["1301","599",0.209],["1277","1419",0.198],["1223","814",0.304],["472","168",0.521],["1107","962",0.287],["434","860",0.283],["847","729",0.27],["933","1182",0.261],["1189","1084",0.424],["419","360",0.274],["145","1389",0.266],["510","738",0.264],["1169","1240",0.383],["738","336",0.277],["763","863",0.346],["831","579",0.448],["768","418",0.219],["305","167",0.216],["346","59",0.379],["1350","1084",0.291],["1287","1297",0.362],["658","691",0.523],["1230","501",0.177],["1291","292",0.268],["1100","369",0.495],["1236","545",0.26],["730","307",0.264],["337","330",0.324],["800","531",0.239],["153","1113",0.211],["246","1136",0.243],["1063","1284",0.381],["1128","610",0.253],["990","1368",0.264],["665","757",0.199],["158","665",0.176],["738","84",0.299],["1269","296",0.206],["434","511",0.353],["890","486",0.334],["285","1287",0.215],["1233","1267",0.248],["40","1249",0.414],["1079","1160",0.338],["195","161",0.237],["443","592",0.307],["697","363",0.234],["727","1107",0.205],["893","310",0.237],["1354","349",0.344],["453","1166",0.205],["738","758",0.34],["1350","613",0.219],["738","1032",0.259],["972","739",0.429],["1038","1256",0.332],["499","1126",0.188],["1345","1266",0.233],["165","1257",0.234],["992","1268",0.262],["303","73",0.189],["668","1156",0.381],["145","1424",0.287],["863","141",0.23],["317","780",0.288],["361","1257",0.171],["593","933",0.288],["192","1015",0.283],["1112","678",0.303],["1277","1082",0.287],["999","821",0.285],["1413","925",0.332],["960","221",0.305],["1058","1297",0.272],["837","355",0.199],["1201","768",0.199],["775","940",0.324],["863","835",0.239],["606","253",0.393],["515","274",0.246],["881","652",0.381],["738","399",0.31],["70","253",0.355],["38","1001",0.326],["1368","1342",0.282],["838","984",0.309],["906","1399",0.42],["88","895",0.21],["872","561",0.351],["806","864",0.194],["1101","73",0.336],["1350","1233",0.255],["860","734",0.302],["1277","1407",0.198],["196","225",0.382],["236","512",0.382],["285","1297",0.207],["456","498",0.349],["40","531",0.193],["186","1250",0.347],["547","973",0.252],["40","31",0.186],["861","1002",0.25],["1299","65",0.333],["860","1396",0.273],["1055","561",0.318],["1230","216",0.688],["734","208",0.303],["456","993",0.34],["772","105",0.281],["999","780",0.262],["740","572",0.406],["754","383",0.198],["1234","95",0.29],["1368","68",0.301],["763","918",0.264],["1292","1121",0.215],["1376","298",0.32],["1249","65",0.234],["458","841",0.219],["280","1163",0.492],["1407","499",0.288],["401","1374",0.369],["315","995",0.223],["1197","560",0.267],["984","399",0.319],["1035","778",0.365],["1035","1162",0.467],["459","694",0.217],["966","1323",0.234],["750","821",0.214],["847","984",0.275],["145","1146",0.265],["111","940",0.382],["547","367",0.247],["383","1101",0.302],["218","904",0.187],["1112","256",0.35],["609","1055",0.313],["219","121",0.432],["355","758",0.23],["66","1132",0.288],["673","962",0.309],["1327","1132",0.255],["129","1314",0.285],["111","636",0.315],["839","159",0.278],["1166","381",0.272],["1233","1269",0.245],["859","305",0.239],["993","1055",0.371],["1224","758",0.304],["679","1055",0.417],["960","971",0.332],["1345","1224",0.244],["1333","545",0.223],["968","1255",0.251],["322","852",0.239],["548","293",0.404],["85","1122",0.488],["374","1284",0.244],["640","352",0.385],["303","1095",0.19],["1038","1226",0.291],["531","1210",0.272],["1270","142",0.317],["232","405",0.256],["1038","121",0.268],["1380","835",0.227],["290","872",0.348],["450","463",0.249],["176","1116",0.323],["502","721",0.451],["660","1240",0.433],["161","1055",0.35],["1303","83",0.362],["672","1267",0.277],["472","129",0.286],["653","599",0.249],["243","730",0.294],["165","995",0.417],["594","672",0.332],["256","678",0.326],["687","881",0.346],["990","856",0.318],["788","329",0.335],["84","354",0.312],["363","1000",0.366],["218","972",0.367],["401","766",0.383],["1387","1156",0.382],["548","872",0.636],["788","1405",0.242],["1385","905",0.326],["1117","626",0.363],["762","349",0.34],["1084","757",0.27],["1218","512",0.346],["65","208",0.211],["260","1015",0.254],["756","661",0.276],["838","969",0.301],["472","1226",0.245],["516","803",0.264],["996","271",0.218],["496","992",0.3],["884","861",0.221],["337","1055",0.931],["601","1267",0.199],["917","161",0.254],["176","729",0.347],["738","1236",0.277],["1195","1405",0.36],["1058","377",0.267],["545","192",0.301],["750","367",0.256],["401","1419",0.271],["1154","85",0.274],["547","1116",0.297],["1192","133",0.233],["831","951",0.259],["763","1372",0.408],["874","918",0.425],["246","739",0.278],["1287","678",0.374],["1054","780",0.253],["738","169",0.24],["838","1291",0.22],["992","1248",0.373],["1008","1373",0.27],["1174","1277",0.275],["878","599",0.436],["516","1002",0.242],["1191","196",0.356],["1368","926",0.261],["498","910",0.273],["1168","1157",0.233],["912","679",0.375],["415","120",0.223],["1354","459",0.199],["70","272",0.488],["1114","599",0.185],["928","1242",0.392],["1007","1362",0.367],["1270","1255",0.198],["183","1236",0.231],["74","820",0.237],["93","948",0.398],["609","1382",0.221],["679","457",0.249],["755","90",0.257],["172","187",0.264],["660","1068",0.236],["189","272",0.297],["165","660",0.241],["874","579",0.267],["84","419",0.231],["674","271",0.215],["505","1370",0.225],["908","65",0.251],["707","1308",0.341],["966","179",0.248],["256","683",0.28],["606","1108",0.387],["509","1028",0.215],["100","661",0.235],["1341","317",0.287],["973","247",0.254],["691","1130",0.268],["1258","433",0.296],["1299","775",0.225],["1330","407",0.287],["594","218",0.357],["244","639",0.265],["1291","803",0.176],["341","246",0.461],["1206","1184",0.484],["510","1282",0.29],["762","1005",0.249],["763","78",0.172],["1038","292",0.239],["1377","992",0.349],["189","253",0.643],["1392","372",0.242],["721","161",0.294],["1053","626",0.349],["820","1266",0.212],["884","1002",0.258],["1318","1219",0.384],["1274","66",0.315],["635","1054",0.258],["837","936",0.283],["149","905",0.422],["1019","890",0.252],["1319","778",0.245],["99","348",0.273],["1408","1128",0.313],["738","892",0.224],["91","280",0.279],["427","1201",0.232],["427","317",0.305],["687","1299",0.279],["1341","926",0.237],["676","357",0.314],["717","1355",0.478],["531","380",0.241],["933","730",0.275],["952","1319",0.256],["1330","1168",0.272],["1309","1136",0.26],["1292","1424",0.282],["1148","324",0.333],["856","1368",0.231],["876","923",0.304],["996","1239",0.257],["545","1276",0.213],["214","509",0.255],["232","821",0.227],["822","372",0.278],["948","65",0.227],["1206","876",0.293],["443","600",0.349],["363","795",0.314],["1162","1251",0.253],["831","918",0.245],["1297","377",0.34],["1360","1249",0.266],["390","99",0.228],["434","1389",0.279],["120","324",0.216],["1385","1154",0.305],["1396","1389",0.268],["183","926",0.345],["1401","1053",0.485],["434","1396",0.288],["1258","1282",0.338],["885","881",0.238],["1209","78",0.305],["179","63",0.406],["1159","694",0.194],["863","931",0.232],["65","1304",0.27],["515","872",0.282],["1282","599",0.232],["511","63",0.272],["1364","516",0.22],["225","850",0.254],["1399","859",0.24],["1205","872",0.318],["685","346",0.26],["847","1355",0.301],["1197","872",0.233],["1084","940",0.315],["673","1175",0.239],["86","1122",0.332],["910","400",0.23],["225","689",0.264],["960","1255",0.301],["1053","999",0.352],["1250","521",0.261],["335","310",0.222],["547","176",0.338],["673","1008",0.192],["1256","349",0.435],["324","1242",0.359],["496","1049",0.22],["354","886",0.232],["857","502",0.214],["822","498",0.262],["1265","377",0.336],["767","923",0.291],["825","561",0.303],["1055","710",0.351],["864","881",0.194],["21","717",0.352],["1148","673",0.259],["101","456",0.245],["180","601",0.25],["1261","636",0.259],["880","653",0.203],["1419","499",0.232],["908","262",0.518],["337","161",0.376],["247","921",0.196],["1175","636",0.276],["1327","996",0.229],["905","1039",0.306],["843","1256",0.159],["1407","1366",0.26],["763","1380",0.229],["505","677",0.251],["146","133",0.272],["158","293",0.262],["290","1113",0.272],["600","1341",0.307],["243","678",0.341],["1157","407",0.246],["1374","372",0.254],["1177","499",0.249],["218","1407",0.247],["198","876",0.28],["876","115",0.216],["687","299",0.272],["863","691",0.321],["1008","433",0.226],["1302","992",0.326],["323","369",0.244],["180","1211",0.346],["315","1418",0.242],["1104","794",0.241],["537","645",0.184],["1330","727",0.38],["1290","734",0.287],["232","336",0.214],["727","208",0.21],["990","499",0.242],["165","236",0.356],["860","1186",0.235],["933","540",0.281],["1119","1309",0.245],["445","169",0.395],["976","457",0.297],["61","592",0.208],["1053","31",0.244],["1350","1301",0.272],["432","1055",0.39],["1401","1248",0.329],["332","921",0.305],["346","97",0.305],["850","1304",0.247],["918","95",0.358],["1100","658",0.423],["740","1110",0.448],["100","690",0.384],["149","172",0.231],["187","59",0.262],["936","1290",0.286],["1064","677",0.209],["1219","401",0.236],["738","505",0.237],["357","1001",0.445],["1121","1005",0.576],["1392","1175",0.201],["214","962",0.667],["1055","780",0.287],["1272","1308",0.2],["1269","1294",0.256],["1082","708",0.35],["754","1308",0.255],["892","1184",0.324],["839","474",0.268],["1301","290",0.3],["1072","380",0.239],["653","1033",0.538],["885","1405",0.246],["847","846",0.23],["196","292",0.273],["593","1199",0.326],["38","835",0.318],["1205","399",0.227],["709","419",0.392],["1119","1380",0.237],["609","1110",0.234],["899","31",0.322],["1035","1374",0.422],["1413","282",0.255],["628","1305",0.221],["474","364",0.237],["551","1136",0.364],["904","260",0.241],["1218","118",0.286],["847","290",0.591],["878","1240",0.202],["515","548",0.217],["678","626",0.35],["674","714",0.386],["164","1265",0.225],["822","1037",0.272],["935","606",0.209],["1220","1418",0.315],["113","232",0.344],["640","669",0.334],["1079","633",0.397],["960","179",0.269],["1268","292",0.345],["225","280",0.267],["1084","219",0.216],["374","1063",0.429],["323","1159",0.272],["773","661",0.278],["572","1130",0.37],["186","163",0.238],["1189","1353",0.296],["738","780",0.322],["763","542",0.54],["1257","1126",0.249],["499","940",0.256],["756","296",0.243],["1079","900",0.278],["904","520",0.254],["70","298",0.366],["450","548",0.285],["893","892",0.408],["1341","457",0.226],["600","1162",0.359],["248","1253",0.211],["838","1342",0.307],["176","399",0.401],["545","773",0.274],["244","876",0.329],["1353","256",0.281],["1319","1399",0.29],["1396","757",0.219],["453","1318",0.208],["1408","216",0.422],["221","349",0.245],["337","65",0.342],["738","672",0.308],["1230","610",0.247],["780","299",0.279],["952","1223",0.265],["645","1039",0.217],["1210","940",0.387],["960","348",0.266],["1189","610",0.301],["754","234",0.201],["183","890",0.217],["843","208",0.27],["1292","1019",0.285],["763","1049",0.225],["998","1189",0.228],["133","1323",0.473],["925","86",0.262],["601","295",0.527],["673","1112",0.291],["669","216",0.303],["1354","1226",0.253],["837","456",0.234],["843","1267",0.255],["405","1255",0.204],["196","1051",0.225],["1054","818",0.266],["856","24",0.366],["246","972",0.478],["767","1347",0.355],["198","605",0.294],["463","335",0.37],["1234","232",0.247],["998","1265",0.242],["1230","1128",0.254],["754","390",0.23],["337","97",0.312],["1408","610",0.349],["1223","545",0.346],["893","1309",0.248],["1097","817",0.232],["90","329",0.206],["1168","951",0.234],["196","669",0.331],["1272","1314",0.296],["1191","225",0.252],["679","1341",0.285],["1270","292",0.202],["841","405",0.209],["751","381",0.385],["1268","906",0.348],["1104","561",0.271],["876","708",0.259],["697","560",0.351],["640","1162",0.315],["1001","1122",0.3],["84","360",0.296],["65","1039",0.234],["84","1424",0.311],["734","1267",0.286],["1030","639",0.275],["1055","1027",0.302],["200","1132",0.232],["1206","622",0.441],["1157","960",0.243],["400","1382",0.218],["517","349",0.27],["1376","1419",0.294],["797","1380",0.305],["683","678",0.312],["1360","846",0.21],["1287","818",0.309],["1342","969",0.258],["767","676",0.257],["1425","1369",0.298],["524","1210",0.272],["550","496",0.21],["352","1162",0.457],["1189","1351",0.262],["685","1294",0.361],["1224","290",0.217],["640","665",0.259],["423","247",0.264],["895","1027",0.259],["1050","892",0.243],["757","59",0.23],["600","433",0.594],["244","747",0.263],["579","243",0.247],["67","758",0.326],["1035","766",0.439],["839","738",0.338],["545","153",0.217],["498","396",0.347],["1108","253",0.37],["572","694",0.253],["1162","1374",0.584],["931","899",0.377],["1345","917",0.246],["1079","347",0.287],["1265","299",0.269],["486","1208",0.193],["512","1240",0.398],["1272","528",0.195],["293","969",0.303],["1174","1163",0.328],["337","710",0.377],["352","806",0.233],["1100","1369",0.248],["1230","1408",0.29],["376","1291",0.239],["1223","542",0.367],["260","1201",0.223],["1370","1028",0.246],["216","248",0.288],["1201","825",0.382],["105","1283",0.206],["164","707",0.325],["1248","1366",0.288],["1399","1239",0.299],["547","21",0.312],["161","921",0.279],["1132","118",0.244],["1355","896",0.275],["1223","900",0.312],["159","1184",0.292],["510","1126",0.241],["1277","1247",0.271],["1184","683",0.301],["246","1362",0.206],["968","872",0.269],["1000","1162",0.341],["142","1005",0.232],["380","1284",0.376],["327","810",0.213],["998","547",0.27],["1082","714",0.231],["341","1396",0.228],["895","282",0.356],["895","1382",0.376],["3","1209",0.316],["443","594",0.197],["129","1408",0.3],["993","1037",0.292],["1038","1387",0.296],["740","1426",0.33],["21","1250",0.263],["24","1256",0.292],["1090","1249",0.219],["635","24",0.298],["315","257",0.351],["633","548",0.404],["434","531",0.239],["129","168",0.303],["1223","762",0.295],["1219","694",0.32],["640","1015",0.266],["458","65",0.25],["895","1413",0.227],["929","248",0.312],["1401","1302",0.287],["1354","797",0.243],["93","498",0.169],["756","361",0.352],["1168","407",0.36],["74","1223",0.24],["1111","498",0.256],["952","709",0.258],["773","349",0.281],["94","1355",0.268],["367","65",0.278],["1000","766",0.475],["1233","1364",0.213],["885","329",0.253],["214","1107",0.319],["509","1424",0.251],["1292","111",0.269],["691","1076",0.267],["307","445",0.197],["512","295",0.243],["186","1297",0.28],["1084","1396",0.318],["783","369",0.244],["502","1369",0.224],["1385","565",0.43],["1166","360",0.244],["186","120",0.271],["256","1064",0.342],["1399","751",0.295],["1399","1357",0.235],["551","337",0.33],["1072","369",0.259],["505","758",0.265],["282","1027",0.291],["951","645",0.286],["352","766",0.428],["838","399",0.32],["860","1389",0.263],["1192","1226",0.227],["176","295",0.276],["990","268",0.283],["129","520",0.262],["751","1026",0.209],["969","872",0.478],["762","636",0.289],["1396","1076",0.369],["486","94",0.235],["70","244",0.478],["685","1284",0.389],["884","1166",0.269],["472","756",0.264],["1338","1128",0.355],["893","1223",0.546],["243","307",0.259],["850","1425",0.383],["494","1226",0.367],["1236","1276",0.233],["390","1294",0.246],["122","264",0.235],["678","405",0.23],["21","1257",0.262],["1101","349",0.28],["331","332",0.393],["537","1006",0.482],["70","1206",0.426],["825","1055",0.412],["542","1290",0.345],["966","1219",0.24],["244","1032",0.277],["933","91",0.291],["763","165",0.379],["1357","872",0.234],["494","677",0.248],["547","381",0.256],["1287","626",0.3],["121","271",0.319],["923","520",0.322],["1104","1265",0.303],["550","936",0.234],["85","86",0.681],["925","298",0.361],["225","762",0.379],["820","1321",0.233],["778","766",0.474],["1224","1266",0.202],["996","1362",0.222],["293","872",0.524],["933","709",0.254],["458","690",0.452],["357","38",0.315],["1277","738",0.308],["88","1418",0.23],["180","1301",0.206],["896","1256",0.242],["118","336",0.597],["772","68",0.424],["74","1104",0.256],["1239","274",0.268],["145","1418",0.199],["1369","658",0.447],["1028","900",0.359],["1076","1108",0.404],["197","516",0.243],["189","97",0.328],["669","1287",0.346],["772","1072",0.252],["450","1360",0.256],["423","364",0.316],["582","935",0.36],["474","1058",0.222],["517","633",0.247],["772","1368",0.263],["282","82",0.21],["142","141",0.221],["521","1407",0.158],["453","1267",0.202],["1287","1054",0.351],["1179","739",0.695],["763","995",0.175],["689","592",0.293],["622","1184",0.358],["605","959",0.295],["396","652",0.275],["1183","1079",0.274],["493","124",0.658],["768","1334",0.255],["993","167",0.271],["806","1276",0.199],["1000","814",0.282],["1342","254",0.394],["750","1038",0.239],["257","1357",0.228],["357","163",0.298],["542","783",0.224],["408","1015",0.236],["450","254",0.274],["67","122",0.288],["1055","65",0.319],["1097","657",0.37],["1413","159",0.509],["839","493",0.551],["367","499",0.235],["1007","1284",0.307],["1201","1283",0.349],["1119","834",0.35],["565","91",0.262],["1368","1331",0.223],["1368","1345",0.263],["1001","163",0.297],["364","141",0.274],["857","794",0.228],["861","1037",0.227],["122","843",0.316],["672","381",0.209],["623","434",0.21],["668","1015",0.225],["1372","1189",0.306],["1169","863",0.265],["457","1374",0.392],["323","1208",0.379],["197","1274",0.362],["1166","317",0.353],["66","1179",0.182],["884","656",0.327],["74","66",0.204],["872","1113",0.239],["1206","298",0.407],["899","330",0.229],["1333","299",0.203],["971","738",0.278],["322","676",0.232],["1019","783",0.211],["778","1374",0.456],["797","923",0.31],["327","1051",0.216],["976","1234",0.238],["374","418",0.298],["1234","819",0.2],["524","121",0.229],["906","751",0.408],["834","133",0.412],["880","1033",0.374],["408","192",0.264],["540","780",0.403],["1233","613",0.223],["1234","797",0.243],["1299","948",0.226],["247","1220",0.437],["61","1112",0.379],["1338","905",0.256],["1270","1208",0.201],["1157","1146",0.332],["863","1199",0.212],["550","581",0.248],["1049","821",0.221],["918","236",0.258],["1399","1169",0.261],["890","656",0.245],["637","768",0.214],["550","1290",0.3],["1303","268",0.226],["747","819",0.193],["640","383",0.204],["1360","1251",0.212],["1347","56",0.215],["396","400",0.462],["1268","738",0.386],["1302","1248",0.261],["1425","1353",0.229],["1218","336",0.296],["999","738",0.262],["1392","1119",0.199],["1327","271",0.204],["738","256",0.29],["730","1182",0.241],["1050","1236",0.196],["547","40",0.217],["884","146",0.232],["572","1267",0.285],["1282","372",0.252],["61","56",0.209],["179","1267",0.187],["498","400",0.352],["122","622",0.247],["972","377",0.453],["244","622",0.495],["401","1162",0.409],["1055","330",0.302],["673","347",0.199],["582","1177",0.243],["882","579",0.315],["1019","341",0.229],["113","1323",0.264],["1175","111",0.274],["1338","661",0.342],["285","1113",0.28],["176","917",0.223],["1287","405",0.384],["197","1189",0.279],["1354","1234",0.277],["520","694",0.378],["149","592",0.313],["70","189",0.382],["1345","679",0.326],["517","1174",0.485],["1413","380",0.299],["494","298",0.356],["740","922",0.277],["763","1210",0.291],["244","1206",0.531],["1038","432",0.316],["1392","158",0.187],["763","1270",0.256],["697","795",0.328],["192","1321",0.245],["673","835",0.484],["236","1240",0.289],["68","1236",0.278],["912","1341",0.224],["576","377",0.344],["315","1357",0.217],["960","407",0.257],["187","346",0.294],["196","1291",0.223],["66","290",0.202],["1330","874",0.448],["493","1209",0.293],["352","418",0.257],["524","1120",0.31],["1146","1195",0.275],["1090","1261",0.246],["656","1011",0.307],["88","806",0.236],["993","1267",0.295],["24","349",0.375],["214","423",0.378],["460","1267",0.219],["551","432",0.332],["322","357",0.292],["1368","1082",0.288],["640","806",0.23],["419","821",0.247],["925","606",0.211]];
+
+function buildLinks(nodes) {
+  const links = [];
+  const nodeById = {};
+  nodes.forEach(n => nodeById[n.id] = n);
+
+  // Use pre-computed TF-IDF cosine similarity edges
+  const addedPairs = new Set();
+  NLP_EDGES.forEach(([a, b, sim]) => {
+    if (!nodeById[a] || !nodeById[b]) return;
+    const key = [a, b].sort().join('|');
+    if (!addedPairs.has(key)) {
+      addedPairs.add(key);
+      links.push({ source: a, target: b, sim: sim });
+    }
+  });
+
+  return links;
+}
+
+function updateGraph() {
+  const filtered = getFilteredSessions();
+  const searchActive = searchQuery.length > 0;
+  const matchedIds = searchActive
+    ? new Set(filtered.filter(sessionMatchesSearch).map(s => s.id))
+    : null;
+
+  document.getElementById("visible-count").textContent = searchActive
+    ? (matchedIds ? matchedIds.size : 0)
+    : filtered.length;
+
+  const links = buildLinks(filtered);
+
+  // Stop old simulation
+  if (simulation) simulation.stop();
+
+  // Clear
+  linkGroup.selectAll("*").remove();
+  nodeGroup.selectAll("*").remove();
+
+  if (filtered.length === 0) return;
+
+  // Build simulation
+  simulation = d3.forceSimulation(filtered)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(40).strength(0.2))
+    .force("charge", d3.forceManyBody().strength(-60))
+    .force("center", d3.forceCenter(wrap.clientWidth / 2, wrap.clientHeight / 2))
+    .force("collision", d3.forceCollide(9))
+    .force("cluster", clusterForce(filtered));
+
+  linkSel = linkGroup.selectAll("line")
+    .data(links)
+    .join("line")
+    .attr("class", "link")
+    .attr("stroke-width", 0.6)
+    .attr("stroke-opacity", searchActive ? 0.08 : 0.25);
+
+  nodeSel = nodeGroup.selectAll("g.node")
+    .data(filtered, d => d.id)
+    .join("g")
+    .attr("class", "node")
+    .call(d3.drag()
+      .on("start", dragStart)
+      .on("drag", dragged)
+      .on("end", dragEnd))
+    .on("click", (e, d) => {
+      e.stopPropagation();
+      selectNode(d);
+    })
+    .on("mouseover", (e, d) => showTooltip(e, d))
+    .on("mousemove", (e) => moveTooltip(e))
+    .on("mouseout", hideTooltip);
+
+  nodeSel.append("circle")
+    .attr("r", d => searchActive && matchedIds.has(d.id) ? 10 : 6)
+    .attr("fill", d => TOPIC_COLORS[d.topic])
+    .attr("stroke", d => TOPIC_COLORS[d.topic])
+    .attr("fill-opacity", d => searchActive && !matchedIds.has(d.id) ? 0.1 : 0.75)
+    .attr("stroke-opacity", d => searchActive && !matchedIds.has(d.id) ? 0.1 : 0.9);
+
+  simulation.on("tick", () => {
+    linkSel
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+  });
+}
+
+// Cluster force: push nodes toward their topic centroid
+function clusterForce(nodes) {
+  const topicAngles = {};
+  const topicList = [...new Set(nodes.map(n => n.topic))];
+  topicList.forEach((t, i) => {
+    topicAngles[t] = (i / topicList.length) * 2 * Math.PI;
+  });
+
+  const cx = wrap.clientWidth / 2;
+  const cy = wrap.clientHeight / 2;
+  const r = Math.min(cx, cy) * 0.45;
+
+  return function(alpha) {
+    nodes.forEach(n => {
+      const angle = topicAngles[n.topic] || 0;
+      const tx = cx + r * Math.cos(angle);
+      const ty = cy + r * Math.sin(angle);
+      n.vx += (tx - n.x) * alpha * 0.12;
+      n.vy += (ty - n.y) * alpha * 0.12;
+    });
+  };
+}
+
+function dragStart(e, d) {
+  if (!e.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x; d.fy = d.y;
+}
+function dragged(e, d) { d.fx = e.x; d.fy = e.y; }
+function dragEnd(e, d) {
+  if (!e.active) simulation.alphaTarget(0);
+  d.fx = null; d.fy = null;
+}
+
+function showTooltip(e, d) {
+  tooltip.innerHTML = `<div class="tt-title">${d.title}</div><div class="tt-meta">${d.topic} · ${d.day === "Thu" ? "Apr 30" : d.day === "Fri" ? "May 1" : "May 2"} · ${d.time}</div>`;
+  tooltip.style.opacity = 1;
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  const rect = wrap.getBoundingClientRect();
+  let x = e.clientX - rect.left + 14;
+  let y = e.clientY - rect.top - 10;
+  if (x + 290 > rect.width) x -= 300;
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
+}
+function hideTooltip() { tooltip.style.opacity = 0; }
+
+function selectNode(d) {
+  selectedNode = d;
+
+  // Highlight
+  nodeSel.classed("selected", n => n.id === d.id);
+  nodeSel.classed("dimmed", n => n.id !== d.id && !isLinked(d.id, n.id));
+  linkSel.classed("highlighted", l => l.source.id === d.id || l.target.id === d.id);
+
+  // Show detail
+  document.getElementById("placeholder").style.display = "none";
+  const detail = document.getElementById("session-detail");
+  detail.classList.add("visible");
+
+  const color = TOPIC_COLORS[d.topic];
+  const dayLabel = d.day === "Thu" ? "Thursday, April 30, 2026" : d.day === "Fri" ? "Friday, May 1, 2026" : "Saturday, May 2, 2026";
+
+  detail.innerHTML = `
+    <div class="detail-topic" style="background:${color}22;color:${color};border:1px solid ${color}44">${d.topic}</div>
+    <div class="detail-title">${d.title}</div>
+    <div class="detail-meta">
+      <div class="meta-row"><span class="meta-icon">📅</span><span class="meta-val">${dayLabel}</span></div>
+      <div class="meta-row"><span class="meta-icon">🕐</span><span class="meta-val">${d.time}</span></div>
+      <div class="meta-row"><span class="meta-icon">📍</span><span class="meta-val">${d.location}</span></div>
+    </div>
+    <div class="detail-id">Session ID: ${d.id}</div>
+  `;
+}
+
+function isLinked(id1, id2) {
+  if (!simulation) return false;
+  const ls = simulation.force("link").links();
+  return ls.some(l => (l.source.id === id1 && l.target.id === id2) || (l.source.id === id2 && l.target.id === id1));
+}
+
+// Deselect on background click
+graphSvg.on("click", () => {
+  if (selectedNode) {
+    selectedNode = null;
+    nodeSel.classed("selected dimmed", false);
+    linkSel.classed("highlighted", false);
+    document.getElementById("placeholder").style.display = "";
+    document.getElementById("session-detail").classList.remove("visible");
+  }
+});
+
+// Initial render
+updateGraph();
+</script>
+</body>
+</html>
