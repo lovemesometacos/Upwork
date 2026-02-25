@@ -1,0 +1,3208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leadership Research Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --parchment: #f5f0e8;
+    --cream: #faf7f2;
+    --gold: #c9962a;
+    --gold-light: #e8c96a;
+    --rust: #b84c2a;
+    --slate: #2d3a4a;
+    --mist: #8a9aaa;
+    --border: #d8cfc0;
+    --card-bg: #ffffff;
+    --sidebar-w: 320px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--slate);
+    color: var(--parchment);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid var(--gold);
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+    color: var(--gold-light);
+  }
+
+  .logo span { color: var(--parchment); opacity: 0.6; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; font-weight: 300; margin-left: 0.75rem; }
+
+  .header-meta {
+    font-size: 0.78rem;
+    opacity: 0.6;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  nav {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--parchment);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-btn:hover, .nav-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--slate);
+  }
+
+  /* ── PANELS ── */
+  .panel { }
+  .network-panel { grid-template-columns: 1fr var(--sidebar-w); min-height: calc(100vh - 64px); }
+  .themes-panel { grid-template-columns: 1fr 1fr; gap: 0; min-height: calc(100vh - 64px); }
+
+  /* ── OVERVIEW ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    min-height: calc(100vh - 64px);
+  }
+
+  .sidebar {
+    background: var(--parchment);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 64px);
+    position: sticky;
+    top: 64px;
+  }
+
+  .sidebar-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.95rem;
+    color: var(--slate);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.02em;
+  }
+
+  .filter-group { margin-bottom: 1.5rem; }
+
+  .filter-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mist);
+    margin-bottom: 0.6rem;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    background: white;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-input:focus { border-color: var(--gold); }
+
+  .chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .chip {
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    background: white;
+    color: var(--slate);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .chip:hover { border-color: var(--gold); color: var(--gold); }
+  .chip.active { background: var(--slate); border-color: var(--slate); color: white; }
+
+  .stats-bar {
+    background: var(--slate);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-item strong { color: var(--gold-light); }
+
+  /* ── ARTICLE LIST ── */
+  .articles-area {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+  }
+
+  .articles-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .article-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .article-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--mist);
+    transition: background 0.2s;
+  }
+
+  .article-card:hover { border-color: var(--gold); box-shadow: 0 2px 12px rgba(201,150,42,0.1); }
+  .article-card:hover::before { background: var(--gold); }
+
+  .card-journal {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mist);
+    margin-bottom: 0.4rem;
+  }
+
+  .card-journal-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-right: 0.4rem;
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .card-authors {
+    font-size: 0.78rem;
+    color: var(--mist);
+    margin-bottom: 0.6rem;
+    font-style: italic;
+  }
+
+  .card-abstract {
+    font-size: 0.83rem;
+    line-height: 1.6;
+    color: #555;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+  }
+
+  .tag {
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .card-date { font-size: 0.75rem; color: var(--mist); }
+
+  .card-link {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gold);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    letter-spacing: 0.02em;
+  }
+
+  .card-link:hover { color: var(--rust); }
+
+  /* ── NETWORK ── */
+  .network-panel {
+    grid-template-columns: 1fr var(--sidebar-w);
+    height: calc(100vh - 64px);
+  }
+
+  #network-canvas-wrap {
+    height: calc(100vh - 64px);
+  }
+
+  .network-sidebar {
+    background: var(--parchment);
+    border-left: 1px solid var(--border);
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .node-info-placeholder {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--mist);
+  }
+
+  .node-info-placeholder svg { margin-bottom: 1rem; opacity: 0.3; }
+
+  .node-detail-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--slate);
+  }
+
+  .node-count {
+    font-size: 0.8rem;
+    color: var(--mist);
+    margin-bottom: 1rem;
+  }
+
+  .node-articles-list { display: grid; gap: 0.6rem; }
+
+  .mini-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mini-card:hover { border-color: var(--gold); }
+
+  .mini-card-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+  }
+
+  .mini-card-meta { font-size: 0.72rem; color: var(--mist); }
+
+  /* ── FUTURE DIRECTIONS ── */
+  .themes-panel {
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: calc(100vh - 64px);
+  }
+
+  .themes-left {
+    background: var(--slate);
+    color: white;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .themes-left h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--gold-light);
+    line-height: 1.2;
+  }
+
+  .theme-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .theme-card:hover { background: rgba(201,150,42,0.15); border-color: var(--gold); }
+  .theme-card.active { background: rgba(201,150,42,0.2); border-color: var(--gold-light); }
+
+  .theme-icon { 
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: rgba(201,150,42,0.2);
+    color: var(--gold-light);
+    border: 1px solid rgba(201,150,42,0.3);
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .theme-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    color: var(--gold-light);
+    margin-bottom: 0.4rem;
+  }
+
+  .theme-desc { font-size: 0.82rem; color: rgba(255,255,255,0.65); line-height: 1.6; }
+
+  .theme-count {
+    margin-top: 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+  }
+
+  .themes-right {
+    background: var(--cream);
+    padding: 3rem;
+    overflow-y: auto;
+  }
+
+  .themes-right h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    color: var(--slate);
+  }
+
+  .future-directions {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .direction-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .direction-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--gold);
+    line-height: 1;
+    min-width: 1.5rem;
+  }
+
+  .direction-text { font-size: 0.85rem; line-height: 1.6; color: var(--slate); }
+
+  .direction-text strong { color: var(--ink); }
+
+  .related-articles-mini {
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  /* ── BRAINSTORM ── */
+  .brainstorm-panel {
+    min-height: calc(100vh - 64px);
+    padding: 2.5rem 3rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .brainstorm-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .brainstorm-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--slate);
+    margin-bottom: 0.5rem;
+  }
+
+  .brainstorm-header p { color: var(--mist); font-size: 0.9rem; }
+
+  .brainstorm-input-area {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s;
+  }
+
+  .brainstorm-input-area:focus-within { border-color: var(--gold); }
+
+  .brainstorm-input-area label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mist);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .brainstorm-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink);
+    resize: none;
+    min-height: 80px;
+    background: transparent;
+  }
+
+  .brainstorm-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .btn-primary {
+    background: var(--slate);
+    color: white;
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-primary:hover { background: var(--gold); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--slate);
+    border: 1.5px solid var(--border);
+    padding: 0.7rem 1.25rem;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover { border-color: var(--slate); }
+
+  .quick-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .quick-topic {
+    padding: 0.4rem 0.9rem;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: white;
+    color: var(--slate);
+  }
+
+  .quick-topic:hover { border-color: var(--gold); color: var(--gold); background: #fff8ec; }
+
+  .brainstorm-output {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .output-section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .output-section-header {
+    background: var(--parchment);
+    padding: 0.85rem 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--slate);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .output-section-body { padding: 1.25rem; }
+
+  .output-list { display: grid; gap: 0.5rem; }
+
+  .output-item {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--slate);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0ebe0;
+  }
+
+  .output-item:last-child { border-bottom: none; }
+
+  .output-item strong { color: var(--ink); }
+
+  /* ── NETWORK SVG STYLES ── */
+  .node circle { stroke-width: 2; cursor: pointer; transition: all 0.2s; }
+  .node circle:hover { stroke-width: 3; }
+  .node text { pointer-events: none; font-family: 'DM Sans', sans-serif; }
+  .link { stroke: rgba(255,255,255,0.15); stroke-width: 1.5; }
+  .link.highlighted { stroke: var(--gold-light); stroke-width: 2.5; }
+
+  .network-legend {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    background: rgba(15,14,12,0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    pointer-events: none;
+  }
+
+  .legend-title {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.6rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 0.3rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* JOURNAL COLOR BADGES */
+  .j-lq { background: #1a3a5c; color: #7ab3e0; }
+  .j-jap { background: #1e3d2f; color: #7dc99a; }
+  .j-jom { background: #3d1a1a; color: #e07a7a; }
+  .j-joop { background: #3d2f1a; color: #e0b87a; }
+  .j-job { background: #2d1a3d; color: #b87ae0; }
+  .j-pp { background: #1a3d3a; color: #7ae0da; }
+  .j-amj { background: #3d3a1a; color: #e0db7a; }
+  .j-other { background: #2d2d2d; color: #aaaaaa; }
+
+  /* TOPIC TAG COLORS */
+  .t-transformational { background: #e8f0fb; color: #2563eb; border: 1px solid #bfdbfe; }
+  .t-lmx { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .t-gender { background: #fce7f3; color: #9d174d; border: 1px solid #fbcfe8; }
+  .t-directive { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .t-ai { background: #f0f9ff; color: #0c4a6e; border: 1px solid #bae6fd; }
+  .t-ethical { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+  .t-followership { background: #f5f3ff; color: #4c1d95; border: 1px solid #ddd6fe; }
+  .t-collective { background: #fdf4ff; color: #701a75; border: 1px solid #f5d0fe; }
+  .t-wellbeing { background: #f0fdf4; color: #14532d; border: 1px solid #bbf7d0; }
+  .t-teams { background: #fff1f2; color: #881337; border: 1px solid #fecdd3; }
+  .t-ceo { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .t-emotion { background: #fff8f1; color: #7c2d12; border: 1px solid #fed7aa; }
+  .t-power { background: #fafaf5; color: #365314; border: 1px solid #d9f99d; }
+
+  /* TOOLTIP */
+  .tooltip {
+    position: fixed;
+    background: var(--slate);
+    color: white;
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    pointer-events: none;
+    z-index: 999;
+    max-width: 260px;
+    line-height: 1.5;
+    border: 1px solid var(--gold);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  /* LOADING */
+  .loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--slate);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s;
+  }
+
+  .loading-screen.hidden { opacity: 0; pointer-events: none; }
+
+  .loading-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-bottom: 0.5rem;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .loading-sub { font-size: 0.8rem; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .loading-bar {
+    margin-top: 2rem;
+    width: 200px;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .loading-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    animation: load 1.5s ease-in-out forwards;
+  }
+
+  @keyframes load {
+    0% { width: 0; }
+    100% { width: 100%; }
+  }
+
+  /* SORT / LAYOUT CONTROLS */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 2rem;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .control-select {
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.35rem 0.7rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    background: white;
+    color: var(--ink);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--mist);
+    font-style: italic;
+  }
+
+  /* NETWORK tooltip area */
+  .network-wrapper { position: relative; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .overview-grid { grid-template-columns: 1fr; }
+    .sidebar { position: static; max-height: none; }
+    .themes-panel { grid-template-columns: 1fr; }
+    .network-panel { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLLBARS */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── ARTICLE MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,14,12,0.6);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 680px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+    border: 1px solid var(--border);
+  }
+
+  .modal-overlay.visible .modal { transform: translateY(0); }
+
+  .modal-journal { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mist); margin-bottom: 0.75rem; }
+  .modal-title { font-family: 'DM Serif Display', serif; font-size: 1.35rem; line-height: 1.4; margin-bottom: 0.75rem; color: var(--ink); }
+  .modal-authors { font-size: 0.85rem; color: var(--mist); font-style: italic; margin-bottom: 1rem; }
+  .modal-abstract { font-size: 0.88rem; line-height: 1.7; color: #444; margin-bottom: 1.25rem; }
+  .modal-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
+  .modal-footer { display: flex; gap: 1rem; }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; font-size: 1.25rem; color: var(--mist); }
+
+  /* ── ADD ARTICLE FORM ── */
+  .add-field-group { margin-bottom: 0.65rem; }
+  .add-label { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mist); margin-bottom: 0.25rem; }
+  .add-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.4rem 0.6rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink);
+    background: white;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-input:focus { border-color: var(--gold); }
+  #customArticlesList .custom-art-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+  }
+  #customArticlesList .custom-art-row:last-child { border-bottom: none; }
+  .custom-art-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--mist);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .custom-art-del:hover { color: var(--rust); }
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">Leadership Research Hub</div>
+  <div class="loading-sub">Loading 90-day literature snapshot</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Article Modal -->
+<div class="modal-overlay" id="articleModal">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">Leadership Research Hub <span>90-Day Snapshot · Feb 2026</span></div>
+  <nav>
+    <button class="nav-btn active" onclick="switchPanel('overview', this)">Articles</button>
+    <button class="nav-btn" onclick="switchPanel('network', this)">Topic Network</button>
+    <button class="nav-btn" onclick="switchPanel('themes', this)">Future Directions</button>
+    <button class="nav-btn" onclick="switchPanel('brainstorm', this)">Brainstorm</button>
+  </nav>
+  <div class="header-meta">14 journals · Leadership filter</div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     PANEL 1: ARTICLE OVERVIEW
+     ═══════════════════════════════════════════════ -->
+<div class="panel active" id="panel-overview">
+  <div class="overview-grid">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-title">Filter & Search</div>
+
+      <div class="filter-group">
+        <div class="filter-label">Search</div>
+        <input type="text" class="search-input" id="searchInput" placeholder="Title, author, keywords…" oninput="applyFilters()">
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-label">Journal</div>
+        <div class="chip-group" id="journalChips"></div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-label">Leadership Topic</div>
+        <div class="chip-group" id="topicChips"></div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-label">Time Window</div>
+        <div class="chip-group">
+          <span class="chip active" data-time="all" onclick="setTime(this,'all')">All 90 Days</span>
+          <span class="chip" data-time="30" onclick="setTime(this,30)">Last 30 Days</span>
+          <span class="chip" data-time="60" onclick="setTime(this,60)">Last 60 Days</span>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-label">Method Type</div>
+        <div class="chip-group" id="methodChips"></div>
+      </div>
+
+      <button class="btn-secondary" style="width:100%;margin-top:0.5rem;" onclick="resetFilters()">Clear All Filters</button>
+
+      <!-- ADD ARTICLE -->
+      <div style="margin-top:1.5rem;border-top:1px solid var(--border);padding-top:1.25rem;">
+        <button class="btn-secondary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.4rem;" onclick="toggleAddForm()">
+          <span id="addFormToggleIcon">+</span> <span>Add Article</span>
+        </button>
+        <div id="addArticleForm" style="display:none;margin-top:1rem;">
+          <div style="font-size:0.72rem;color:var(--mist);margin-bottom:0.85rem;line-height:1.5;">Fill in the fields below. Title, authors, and journal are required. Articles are saved across sessions.</div>
+
+          <div class="add-field-group">
+            <label class="add-label">Title <span style="color:var(--rust)">*</span></label>
+            <input class="add-input" id="af-title" type="text" placeholder="Full article title">
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">Authors <span style="color:var(--rust)">*</span></label>
+            <input class="add-input" id="af-authors" type="text" placeholder="Last, F., Last, F., …">
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">Journal <span style="color:var(--rust)">*</span></label>
+            <input class="add-input" id="af-journal" type="text" placeholder="e.g. Leadership Quarterly" list="journal-datalist">
+            <datalist id="journal-datalist">
+              <option value="Leadership Quarterly">
+              <option value="Journal of Applied Psychology">
+              <option value="Journal of Management">
+              <option value="Journal of Organizational Behavior">
+              <option value="Journal of Occupational and Organizational Psychology">
+              <option value="Personnel Psychology">
+              <option value="Academy of Management Journal">
+              <option value="Academy of Management Review">
+              <option value="Journal of Business and Psychology">
+              <option value="Journal of Managerial Psychology">
+              <option value="Human Resource Management">
+              <option value="Group & Organization Management">
+              <option value="Organization Science">
+              <option value="Organizational Psychology Review">
+            </datalist>
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">DOI</label>
+            <input class="add-input" id="af-doi" type="text" placeholder="10.xxxx/xxxxx">
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">Publication Date</label>
+            <input class="add-input" id="af-date" type="date">
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">Abstract</label>
+            <textarea class="add-input" id="af-abstract" rows="3" placeholder="Paste abstract (optional)" style="resize:vertical;font-family:inherit;font-size:0.82rem;line-height:1.5;"></textarea>
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">Leadership Topics</label>
+            <input class="add-input" id="af-topics" type="text" placeholder="e.g. LMX, Gender & Leadership">
+            <div style="font-size:0.68rem;color:var(--mist);margin-top:0.25rem;">Comma-separated. Used for filtering and network.</div>
+          </div>
+          <div class="add-field-group">
+            <label class="add-label">Method Types</label>
+            <input class="add-input" id="af-methods" type="text" placeholder="e.g. Survey, Meta-Analysis">
+            <div style="font-size:0.68rem;color:var(--mist);margin-top:0.25rem;">Comma-separated.</div>
+          </div>
+
+          <div id="af-error" style="display:none;font-size:0.78rem;color:var(--rust);margin-bottom:0.6rem;padding:0.5rem;background:rgba(184,76,42,0.08);border-radius:4px;"></div>
+
+          <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+            <button class="btn-primary" style="flex:1;font-size:0.82rem;" onclick="submitAddArticle()">Save Article</button>
+            <button class="btn-secondary" style="font-size:0.82rem;" onclick="toggleAddForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE CUSTOM ARTICLES -->
+      <div id="customArticlesMgmt" style="display:none;margin-top:0.75rem;">
+        <div style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--mist);margin-bottom:0.5rem;">Your Articles</div>
+        <div id="customArticlesList"></div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div>
+      <!-- Stats Bar -->
+      <div class="stats-bar" id="statsBar">
+        <span>Showing <strong id="visibleCount">—</strong> articles</span>
+        <span>from <strong id="journalCount">—</strong> journals</span>
+        <span><strong id="dateRange">Nov 2025 – Feb 2026</strong></span>
+      </div>
+      <!-- Controls -->
+      <div class="controls-bar">
+        <label style="font-size:0.8rem;color:var(--mist);">Sort:</label>
+        <select class="control-select" id="sortSelect" onchange="applyFilters()">
+          <option value="date-desc">Newest First</option>
+          <option value="date-asc">Oldest First</option>
+          <option value="journal">By Journal</option>
+          <option value="title">By Title</option>
+        </select>
+      </div>
+      <div class="articles-area">
+        <div class="articles-grid" id="articlesGrid"></div>
+        <div class="no-results" id="noResults" style="display:none">No articles match your filters. Try broadening your search.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PANEL 2: TOPIC NETWORK
+     ═══════════════════════════════════════════════ -->
+<div class="network-panel" id="panel-network">
+  <div id="network-canvas-wrap" style="position:relative;overflow:hidden;background:#1a2535;">
+    
+    
+    <div id="network-legend" style="position:absolute;bottom:1.5rem;left:1.5rem;background:rgba(10,15,22,0.88);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;">
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin-bottom:0.6rem;">Research Area</div>
+      <div id="legend-items"></div>
+      <div style="margin-top:0.8rem;padding-top:0.6rem;border-top:1px solid rgba(255,255,255,0.08);font-size:0.68rem;color:rgba(255,255,255,0.3);">Node size = article count · Click to explore · Scroll to zoom</div>
+    </div>
+    <div id="network-tooltip" style="position:fixed;background:#0f1923;color:white;padding:0.6rem 0.9rem;border-radius:6px;font-size:0.78rem;pointer-events:none;z-index:999;max-width:220px;line-height:1.5;border:1px solid rgba(201,150,42,0.5);opacity:0;transition:opacity 0.1s;"></div>
+  </div>
+  <div class="network-sidebar">
+    <div class="sidebar-title">Topic Explorer</div>
+    <div id="nodeInfoArea">
+      <div style="padding:2rem 0.5rem;color:var(--mist);font-size:0.85rem;line-height:1.6;">
+        Click any node in the network to see related articles and research insights for that topic.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PANEL 3: FUTURE DIRECTIONS
+     ═══════════════════════════════════════════════ -->
+<div class="themes-panel" id="panel-themes">
+  <div class="themes-left">
+    <div>
+      <h2>Common Future Research Directions</h2>
+      <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin-top:0.5rem;">Synthesized from recent leadership articles across 14 journals. Click a theme to explore the literature supporting it.</p>
+    </div>
+    <div id="themeCards"></div>
+  </div>
+  <div class="themes-right" id="themeDetail">
+    <div style="text-align:center;padding:4rem 2rem;color:var(--mist);">
+      <p style="font-size:0.9rem;line-height:1.6;">Select a theme on the left to see the associated future research directions, supporting articles, and brainstorm ideas.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PANEL 4: BRAINSTORM
+     ═══════════════════════════════════════════════ -->
+<div class="brainstorm-panel" id="panel-brainstorm">
+  <div class="brainstorm-header">
+    <h2>Research Brainstorm Tool</h2>
+    <p>Describe your research interest and get ideas grounded in the current literature.</p>
+  </div>
+
+  <div class="brainstorm-input-area">
+    <label>Your Research Interest or Question</label>
+    <textarea class="brainstorm-textarea" id="brainstormInput" placeholder="e.g., How does leader emotion regulation affect follower well-being in remote teams?" rows="3"></textarea>
+  </div>
+
+  <div style="margin-bottom:1rem;">
+    <div class="filter-label" style="margin-bottom:0.5rem;">Quick Topics</div>
+    <div class="quick-topics" id="quickTopics"></div>
+  </div>
+
+  <div class="brainstorm-actions">
+    <button class="btn-primary" onclick="runBrainstorm()">Generate Ideas</button>
+    <button class="btn-secondary" onclick="clearBrainstorm()">Clear</button>
+  </div>
+
+  <div class="brainstorm-output" id="brainstormOutput"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// DATA — 75 leadership-relevant articles from across the 14 journals
+// ═══════════════════════════════════════════════════════════════════════
+const ARTICLES = [
+  // ── LEADERSHIP QUARTERLY ──
+  {
+    id: 1, journal: "Leadership Quarterly", journalCode: "lq",
+    title: "Are women less convincing or perceivers biased? Understanding differential reactions towards men and women's intentions to exert influence",
+    authors: "Matthieu Jost, Gwendolin B. Sajons, Marianne Schmid Mast",
+    date: "2026-02-01", doi: "10.1016/j.leaqua.2025.101882",
+    abstract: "Investigates whether differences in how men and women are perceived when attempting to influence others stem from women's communication styles or perceivers' gender biases. Has implications for women's ascension to leadership roles.",
+    topics: ["Gender & Leadership", "Leader Influence", "Perception & Bias"],
+    methods: ["Experimental"],
+    futureThemes: ["Gender & Leadership", "Perception Bias"]
+  },
+  {
+    id: 2, journal: "Leadership Quarterly", journalCode: "lq",
+    title: "Leadership in layers: An integrative review on skip-level leadership and an agenda for future research",
+    authors: "Pauline Schilpzand, Randolph Nerona, Yiqiong Li, Simon Lloyd D. Restubog, Yasin Rofcanin",
+    date: "2026-02-01", doi: "10.1016/j.leaqua.2025.101930",
+    abstract: "Provides the first integrative review of skip-level leadership — when leaders lead employees two or more levels below them in the hierarchy — and offers a comprehensive research agenda for this underexplored phenomenon.",
+    topics: ["Hierarchical Leadership", "Multi-Level Leadership", "Leader Influence"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Multi-Level Leadership", "Hierarchical Influence"]
+  },
+  {
+    id: 3, journal: "Leadership Quarterly", journalCode: "lq",
+    title: "Leader interpersonal emotion management: An Input-Process-Output framework and research agenda",
+    authors: "Bo Shao",
+    date: "2026-02-01", doi: "10.1016/j.leaqua.2025.101927",
+    abstract: "Proposes an IPO framework for how leaders strategically manage their own and others' emotions in interpersonal interactions. Distinguishes emotion management from emotional labor and calls for more naturalistic behavioral research.",
+    topics: ["Leader Emotion Regulation", "Emotional Intelligence", "Leader Behavior"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Leader Emotions & Wellbeing", "Behavioral Leadership"]
+  },
+  {
+    id: 4, journal: "Leadership Quarterly", journalCode: "lq",
+    title: "How does collective leadership emerge? A dual-process theory formalized using agent-based modeling",
+    authors: "Bryan P. Acton, Roseanne J. Foti, Andreas D. Pape, Robert G. Lord",
+    date: "2026-02-01", doi: "10.1016/j.leaqua.2025.101912",
+    abstract: "Uses agent-based modeling to formalize a dual-process theory of how collective leadership patterns emerge from individual leader-follower interactions over time. Bridges cognitive and dynamic systems perspectives.",
+    topics: ["Collective Leadership", "Leadership Emergence", "Computational Methods"],
+    methods: ["Computational/Simulation", "Theoretical/Review"],
+    futureThemes: ["Collective & Shared Leadership", "Dynamic Leadership"]
+  },
+  {
+    id: 5, journal: "Leadership Quarterly", journalCode: "lq",
+    title: "Building actionable theories: The role of causal constructs",
+    authors: "Joerg Dietz",
+    date: "2026-02-01", doi: "10.1016/j.leaqua.2025.101929",
+    abstract: "Argues that leadership theories need causal constructs — not just correlational relationships — in order to be actionable. Proposes a philosophy of science-based framework for building more rigorous leadership theories.",
+    topics: ["Theory Building", "Research Methods", "Leadership Science"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Research Methods & Theory", "Causal Inference"]
+  },
+
+  // ── JOURNAL OF APPLIED PSYCHOLOGY ──
+  {
+    id: 6, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "From cues to categorizations: An integrative framework for leader (re-)categorization over time",
+    authors: "Henry R. Young, Dana L. Joseph, David R. Glerum, Russell E. Johnson",
+    date: "2026-03-01", doi: "10.1037/apl0001319",
+    abstract: "Presents a comprehensive review of how multiple and sometimes competing cues are perceived, interpreted, and activated as traits in the leader categorization process. Shows how leader prototypes shift dynamically over time.",
+    topics: ["Leader Categorization", "Leadership Perception", "Implicit Leadership"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Perception & Implicit Leadership", "Dynamic Leadership"]
+  },
+  {
+    id: 7, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "The u-shaped relationship between locus of control and prohibitive voice via perceived risk: The moderating role of team voice climate",
+    authors: "Xuemei Liu, Ying Wang, Mingpeng Huang, Minya Xu, Dong Liu et al.",
+    date: "2026-03-01", doi: "10.1037/apl0001316",
+    abstract: "Tests a U-shaped relationship between employee locus of control and prohibitive voice behavior, mediated by perceived risk. Team voice climate moderates when internal vs. external LOC employees feel safer speaking up.",
+    topics: ["Employee Voice", "Leadership Climate", "Team Leadership"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Voice & Silence", "Leadership Climate"]
+  },
+  {
+    id: 8, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "An integrative conceptual review of gender bias in leader evaluations: An observer-focused motive-driven process model",
+    authors: "Soojin Oh, Aparna Joshi, Sridhar Polineni",
+    date: "2026-02-12", doi: "10.1037/apl0001350",
+    abstract: "Shifts the focus on gender bias in leader evaluations from the leader to the observer. Proposes a motive-driven model explaining why and when observers exhibit gender bias, resolving contradictory findings in the literature.",
+    topics: ["Gender & Leadership", "Leadership Perception", "Diversity in Leadership"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Gender & Leadership", "Perception Bias"]
+  },
+  {
+    id: 9, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "The psychology of following: Conceptualizing and validating the Fundamental Follower Needs Inventory",
+    authors: "Xiaotian Sheng, Wendy Andrews, Mark van Vugt",
+    date: "2026-02-09", doi: "10.1037/apl0001347",
+    abstract: "Develops and validates a psychometrically robust measure identifying six core follower needs: protection, affiliation, status, guidance, information, and autonomy. Grounded in evolutionary followership psychology.",
+    topics: ["Followership", "Leader-Follower Dynamics", "Leadership Measurement"],
+    methods: ["Scale Development", "Survey"],
+    futureThemes: ["Followership", "Leadership Measurement"]
+  },
+  {
+    id: 10, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "The competence shield: Fostering competence perceptions weakens the dominance penalty for women in leadership",
+    authors: "Zhiyu Feng, Anyi Ma, Priyanka Dwivedi, Fangzhou Liu",
+    date: "2026-02-01", doi: "10.1037/apl0001279",
+    abstract: "Shows that competence perceptions can attenuate the social penalty women face for displaying dominant, agentic qualities associated with leadership. Four multiwave, multisource field studies and experiments.",
+    topics: ["Gender & Leadership", "Women Leaders", "Perception & Bias"],
+    methods: ["Survey", "Experimental", "Multi-wave"],
+    futureThemes: ["Gender & Leadership", "Perception Bias"]
+  },
+  {
+    id: 11, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "Turning the envious boss into a friend or a foe: Emotional and behavioral reactions to being envied by one's supervisor and its impact on LMX",
+    authors: "Haoying (Howie) Xu, Harshad Puranik, Sandy J. Wayne, Jingzhou Pan",
+    date: "2026-02-16", doi: "10.1037/apl0001366",
+    abstract: "Examines how subordinates respond to being envied by their supervisors and how this shapes leader-member exchange quality. Distinguishes benign vs. malicious supervisor envy and its downstream effects.",
+    topics: ["LMX", "Leader-Follower Dynamics", "Leader Emotion"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Leader-Follower Dynamics", "LMX"]
+  },
+  {
+    id: 12, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "Translating human capital amid varying intentions to stay: An integrative conceptual review of the immigrant employment attainment process",
+    authors: "Snehal Hora, Emily D. Campion, Sima Sajjadiani, Diana Lee",
+    date: "2026-02-12", doi: "10.1037/apl0001343",
+    abstract: "Reviews leadership and career processes specific to immigrant employees, modeling how intended duration of stay shapes human capital translation. Implications for inclusive leadership and multicultural workplaces.",
+    topics: ["Diversity in Leadership", "Inclusion", "Cross-Cultural Leadership"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Diversity, Inclusion & Leadership", "Cross-Cultural Leadership"]
+  },
+  {
+    id: 13, journal: "Journal of Applied Psychology", journalCode: "jap",
+    title: "Observers' gender and behavioral responses to workplace sexual harassment via empathy: The moderating role of organizational intolerance",
+    authors: "Sohee Kim, YoungAh Park, Yijue Liang",
+    date: "2026-02-01", doi: "10.1037/apl0001307",
+    abstract: "Examines how leader-established organizational intolerance moderates whether male vs. female bystanders intervene against sexual harassment. Demonstrates the key organizational role of leaders in shaping anti-harassment culture.",
+    topics: ["Ethical Leadership", "Abusive Leadership", "Organizational Culture"],
+    methods: ["Survey", "Experimental"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leadership Climate"]
+  },
+
+  // ── JOURNAL OF MANAGEMENT ──
+  {
+    id: 14, journal: "Journal of Management", journalCode: "jom",
+    title: "A CEO-Driven Process Model of Firm Responsiveness to Secondary Stakeholder Demands: The Roles of CEO Values and Passion",
+    authors: "François Neville, G. Alessandra Rizzi, Jeffrey B. Lovelace",
+    date: "2026-02-12", doi: "10.1177/01492063261416425",
+    abstract: "Develops a process model showing how CEO personal values and passion for stakeholders drive whether and how firms respond to secondary stakeholder demands. Extends upper echelons theory to include motivational dynamics.",
+    topics: ["CEO & Top Leaders", "Strategic Leadership", "Upper Echelons"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["CEO & Upper Echelons", "Strategic Leadership"]
+  },
+  {
+    id: 15, journal: "Journal of Management", journalCode: "jom",
+    title: "Social Media and Organizations: An Integrative Review and Future Research Directions",
+    authors: "Niken Putri, Michael Etter, Rhonda K. Reger, Md Ziad Haidar",
+    date: "2026-01-29", doi: "10.1177/01492063251411873",
+    abstract: "Reviews 647 articles on how social media reshapes organizational leadership and identity. Synthesizes organization-centric, audience-centric, and co-creative perspectives with implications for how leaders communicate in digital spaces.",
+    topics: ["Digital Leadership", "Leader Communication", "Organizational Identity"],
+    methods: ["Systematic Review"],
+    futureThemes: ["Digital & AI Leadership", "Leader Communication"]
+  },
+  {
+    id: 16, journal: "Journal of Management", journalCode: "jom",
+    title: "When Overconfident CEOs Deliver Higher Returns: Evidence From Acquisition Waves",
+    authors: "Jun Xu, Jerayr (John) Haleblian, Guoli Chen, Jamie Yixing Tong",
+    date: "2026-02-08", doi: "10.1177/01492063251397362",
+    abstract: "Challenges the conventional wisdom that CEO overconfidence destroys value, showing it can deliver higher returns during acquisition waves when speed is essential. Enriches upper echelons and behavioral strategy literatures.",
+    topics: ["CEO & Top Leaders", "Strategic Leadership", "Leader Cognition"],
+    methods: ["Archival", "Quantitative"],
+    futureThemes: ["CEO & Upper Echelons", "Leader Cognition"]
+  },
+  {
+    id: 17, journal: "Journal of Management", journalCode: "jom",
+    title: "How Gender Diversity and Equality in R&D Departments Jointly Affect Firm-Level Innovation Through Innovation Capabilities",
+    authors: "Boris Lokshin, Christophe Boone, Corinne Post",
+    date: "2026-02-16", doi: "10.1177/01492063251407611",
+    abstract: "Shows gender diversity AND rank equality together drive firm-level innovation. Implication for leadership: equitable representation at all hierarchical ranks matters, not just headcount diversity.",
+    topics: ["Diversity in Leadership", "Team Leadership", "Gender & Leadership"],
+    methods: ["Longitudinal", "Archival"],
+    futureThemes: ["Diversity, Inclusion & Leadership", "Team Leadership"]
+  },
+
+  // ── JOURNAL OF OCCUPATIONAL & ORGANIZATIONAL PSYCHOLOGY ──
+  {
+    id: 18, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Transformational and directive leadership in the operating room: Complementary effects under surgical complexity",
+    authors: "Michaela Scanlon, Julian Barling, Shani Pupco, Steve Granger, Nick Turner et al.",
+    date: "2026-02-21", doi: "10.1111/joop.70091",
+    abstract: "Examines how transformational and directive leadership combine to influence team psychological safety and patient outcomes during complex surgeries. Under high complexity, the two styles interact to boost safety.",
+    topics: ["Transformational Leadership", "Directive Leadership", "Leader Behavior", "Healthcare Leadership"],
+    methods: ["Multi-source", "Field Study"],
+    futureThemes: ["Context-Specific Leadership", "Behavioral Leadership"]
+  },
+  {
+    id: 19, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Directive leadership as social adaptation: How leader and aggregate team CSE interact with team past performance",
+    authors: "Hua Li, Haoyu Wang, Fuli Li",
+    date: "2026-02-19", doi: "10.1111/joop.70100",
+    abstract: "Conceptualizes directive leadership as a socially adaptive process. Leader core self-evaluation interacts with team CSE and team past performance to shape directive behavior in a three-way interaction.",
+    topics: ["Directive Leadership", "Adaptive Leadership", "Leader Traits"],
+    methods: ["Multi-source", "Multi-wave", "Field Study"],
+    futureThemes: ["Adaptive & Contextual Leadership", "Behavioral Leadership"]
+  },
+  {
+    id: 20, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "I won't let you down! Transformational leadership, anticipated guilt of failure, and follower extra work effort",
+    authors: "Chang-Jun Li, Hong Deng, Fuli Li, Lanyue Fan",
+    date: "2026-02-16", doi: "10.1111/joop.70089",
+    abstract: "Challenges the assumption that transformational leadership motivates through positive experiences. Shows that anticipated guilt of failure is a novel — and darker — mechanism linking TFL to follower extra effort.",
+    topics: ["Transformational Leadership", "Follower Motivation", "Leader Emotion"],
+    methods: ["Survey", "Experimental", "Multi-wave"],
+    futureThemes: ["Transformational Leadership", "Leader-Follower Dynamics"]
+  },
+  {
+    id: 21, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Mitigating the toxic experience of knowledge theft: An exploration of interventions",
+    authors: "David Zweig, Kristyn A. Scott, Alycia Damp, Tiffany Paquin",
+    date: "2026-02-13", doi: "10.1111/joop.70093",
+    abstract: "Investigates the emotional consequences of knowledge theft (when a colleague takes credit for others' work) and evaluates leader and peer interventions that restore ownership and reduce anger in victims.",
+    topics: ["Ethical Leadership", "Abusive Leadership", "Leader Interventions"],
+    methods: ["Experimental"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leader Interventions"]
+  },
+  {
+    id: 22, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Differential returns from networking behaviours for men and women: A longitudinal study",
+    authors: "Hans-Georg Wolff, Klaus Moser",
+    date: "2026-02-09", doi: "10.1111/joop.70090",
+    abstract: "Longitudinal study of gender differences in the career returns from different networking behaviors. Finds that while men benefit from most dimensions, women may benefit as much or more from at least some.",
+    topics: ["Gender & Leadership", "Leadership Careers", "Diversity in Leadership"],
+    methods: ["Longitudinal", "Survey"],
+    futureThemes: ["Gender & Leadership", "Leadership Development"]
+  },
+  {
+    id: 23, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Balancing newcomer social integration and voice during organizational socialization: A longitudinal study",
+    authors: "Lucas Dufour, Massimo Maoret, Francesco Montani",
+    date: "2026-02-21", doi: "10.1111/joop.70097",
+    abstract: "Shows how trust in supervisors — affective vs. cognitive — differentially supports newcomer performance through social integration vs. voice. Supervisor relationship quality shapes whether newcomers assimilate or differentiate.",
+    topics: ["LMX", "Supervisor Behavior", "Socialization"],
+    methods: ["Longitudinal", "Multi-wave"],
+    futureThemes: ["LMX", "Leadership Climate"]
+  },
+
+  // ── JOURNAL OF ORGANIZATIONAL BEHAVIOR ──
+  {
+    id: 24, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "AI-Augmented Leadership: How, Why, and When Leaders' Collaboration With AI Enhances Team Performance",
+    authors: "Pei Liu, Daniel I. Watts, Xin Li, Xiaotian Wang, Aimei Li",
+    date: "2026-02-20", doi: "10.1002/job.70070",
+    abstract: "Theorizes and tests how leader-AI collaboration enhances team performance through reducing role overload, enhancing team reflexivity, and improving role breadth self-efficacy. Leader age strengthens these positive effects.",
+    topics: ["AI & Leadership", "Digital Leadership", "Team Leadership"],
+    methods: ["Multi-source", "Multi-wave", "Survey"],
+    futureThemes: ["Digital & AI Leadership", "Team Leadership"]
+  },
+  {
+    id: 25, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "Do Differentiated Leader–Follower Relationships Matter for Collective Emotion? LMX Differentiation, Work Group Positive Affect, and Trickle-Out Effects",
+    authors: "Olga Epitropaki, Yuyan Zheng, Marisa Plater, Les Graham",
+    date: "2026-02-03", doi: "10.1002/job.70068",
+    abstract: "Multilevel investigation of how LMX differentiation within work groups shapes group positive affect and trickles out to customer service outcomes. Hair salon data (N=1608) links leader relationship patterns to customer emotions.",
+    topics: ["LMX", "Leader-Follower Dynamics", "Team Leadership", "Leader Emotion"],
+    methods: ["Multi-level", "Field Study"],
+    futureThemes: ["LMX", "Team Leadership"]
+  },
+  {
+    id: 26, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "From Near to Far: Why, How, and When Mindful Leadership Can Benefit Subordinates' Family Members",
+    authors: "Xingyu Feng, Yinbo Zheng, Tianyi Long, Ping Han",
+    date: "2026-01-27", doi: "10.1002/job.70053",
+    abstract: "Shows that mindful leaders help subordinates become more socially mindful, which transmits benefits to followers' family members at home. Extends leadership research beyond organizational boundaries.",
+    topics: ["Mindful Leadership", "Leader Wellbeing", "Work-Life Spillover"],
+    methods: ["Multi-wave", "Survey"],
+    futureThemes: ["Leader Wellbeing & Sustainability", "Leader-Follower Dynamics"]
+  },
+  {
+    id: 27, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "When Inviting Voice Backfires: How Leader Dominance Shapes Employee Responses to Voice Solicitation",
+    authors: "Qi Song, Shibo Yang, Yang Chen, Shuang Ren, Yuxuan Guo",
+    date: "2026-01-25", doi: "10.1002/job.70052",
+    abstract: "Shows that leader-solicited voice can backfire when leaders are dominant. Dominant leaders who ask for voice trigger paradoxical silence because employees doubt the sincerity of the invitation.",
+    topics: ["Employee Voice", "Leader Behavior", "Leader-Follower Dynamics"],
+    methods: ["Survey", "Experimental"],
+    futureThemes: ["Voice & Silence", "Behavioral Leadership"]
+  },
+  {
+    id: 28, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "Bridging Bystander Intervention and Workplace Inclusion: The Critical Role of Perceived Fairness, Support, and Safety",
+    authors: "Laura Jennings, Kun Zhao, Liam Smith, Denise Goodwin, Nicholas Faulkner",
+    date: "2026-02-20", doi: "10.1002/job.70069",
+    abstract: "Qualitative study showing that senior leadership behavior and policy-practice alignment are critical organizational conditions determining whether bystander intervention leads to genuine inclusion.",
+    topics: ["Inclusive Leadership", "Ethical Leadership", "Organizational Culture"],
+    methods: ["Qualitative"],
+    futureThemes: ["Diversity, Inclusion & Leadership", "Ethical & Destructive Leadership"]
+  },
+  {
+    id: 29, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "Personal Roles, Professional Choices: The Effect of Boundary Management in Professional Partner Selection",
+    authors: "Sophie Feldner, Dominik Hettich, Torsten Bornemann",
+    date: "2026-02-20", doi: "10.1002/job.70075",
+    abstract: "Investigates how leaders' boundary management preferences influence their professional partner selection decisions in digital, hybrid work contexts. Role separation preferences significantly shape who leaders choose to work with.",
+    topics: ["Digital Leadership", "Leader Behavior", "Remote Work Leadership"],
+    methods: ["Experimental"],
+    futureThemes: ["Digital & AI Leadership", "Behavioral Leadership"]
+  },
+  {
+    id: 30, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "Polluted Air, Polluted Minds: The Psychological Costs of Air Pollution Events on Employee Work and Life",
+    authors: "Dong Liu, Yang Chen, Jianfeng Jia, Ruonan Zhao",
+    date: "2026-02-11", doi: "10.1002/job.70066",
+    abstract: "Shows that air pollution events have significant psychological costs for employees. Organizations and leaders can serve as a mitigating mechanism through leadership behavior and organizational resources.",
+    topics: ["Leader Wellbeing", "Organizational Context", "Sustainable Leadership"],
+    methods: ["Multi-wave", "Survey"],
+    futureThemes: ["Leader Wellbeing & Sustainability", "Context-Specific Leadership"]
+  },
+
+  // ── PERSONNEL PSYCHOLOGY ──
+  {
+    id: 31, journal: "Personnel Psychology", journalCode: "pp",
+    title: "A Meta-Analysis of Antecedents of High-Performance Work System Use: The Role of Firms' Strategic and Institutional Environmental Forces",
+    authors: "Dishi Hu, In-Sue Oh, Joo Hun Han, Kaifeng Jiang, Yan Pan et al.",
+    date: "2026-02-16", doi: "10.1111/peps.70023",
+    abstract: "Meta-analysis showing firms' strategic forces are substantially more influential than institutional forces in shaping HPWS use. Differentiation strategy, firm size, past performance are top determinants.",
+    topics: ["Strategic Leadership", "HR Leadership", "Organizational Systems"],
+    methods: ["Meta-Analysis"],
+    futureThemes: ["Strategic Leadership", "Leadership & Organizational Systems"]
+  },
+  {
+    id: 32, journal: "Personnel Psychology", journalCode: "pp",
+    title: "Optimizing Human Resource Conditions for 20-Year Initial Public Offering (IPO) Survival",
+    authors: "Theresa M. Welbourne, Miranda J. Welbourne Eleazar, Joshua V. White",
+    date: "2026-02-10", doi: "10.1111/peps.70021",
+    abstract: "Examines executive value imprinting at the IPO stage and its 20-year survival effects. Leaders' values at transformational firm events imprint durably on organizational culture and performance.",
+    topics: ["CEO & Top Leaders", "Strategic Leadership", "Leader Values"],
+    methods: ["Longitudinal", "Archival"],
+    futureThemes: ["CEO & Upper Echelons", "Leader Values & Character"]
+  },
+
+  // ── ACADEMY OF MANAGEMENT JOURNAL ──
+  {
+    id: 33, journal: "Academy of Management Journal", journalCode: "amj",
+    title: "They Saw It Coming: Executive Experience and Foresight in Competitor Identification",
+    authors: "Sruthi Thatchenkery",
+    date: "2026-02-20", doi: "10.5465/amj.2024.0463",
+    abstract: "Shows that executive experience enables foresight in identifying emerging competitors before they become apparent to others. Enriches upper echelons theory with a temporal, prospective dimension.",
+    topics: ["CEO & Top Leaders", "Strategic Leadership", "Leader Cognition"],
+    methods: ["Archival", "Quantitative"],
+    futureThemes: ["CEO & Upper Echelons", "Leader Cognition"]
+  },
+  {
+    id: 34, journal: "Academy of Management Journal", journalCode: "amj",
+    title: "Understanding Why and When Coworkers Undermine Employees Who Have Friends in High Places",
+    authors: "Ruolian Fang, Daniel J. McAllister, Zhen Zhang, Michelle K. Duffy, Lin Wang",
+    date: "2026-02-04", doi: "10.5465/amj.2022.1306",
+    abstract: "Explains when and why privileged access to powerful leaders (having friends in high places) triggers coworker undermining. Status envy and perceived unfairness drive interpersonal harm in organizational hierarchies.",
+    topics: ["Leader Influence", "Power & Politics", "Interpersonal Leadership"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Power, Politics & Leadership", "Leader-Follower Dynamics"]
+  },
+  {
+    id: 35, journal: "Academy of Management Journal", journalCode: "amj",
+    title: "Market-Stigmatized Groups and the Effectiveness of Stigma Management Strategies",
+    authors: "Cyrus Dioun, Kisha Lashley, Vontrese Pamphile",
+    date: "2026-02-13", doi: "10.5465/amj.2023.0995",
+    abstract: "Examines how organizational leaders manage stigma attached to market-stigmatized groups (e.g., cannabis industry). Leadership strategies for navigating institutional stigma have differential effectiveness.",
+    topics: ["Strategic Leadership", "Organizational Identity", "Ethical Leadership"],
+    methods: ["Archival", "Quantitative"],
+    futureThemes: ["Strategic Leadership", "Ethical & Destructive Leadership"]
+  },
+  {
+    id: 36, journal: "Academy of Management Journal", journalCode: "amj",
+    title: "To Be or Not To Be (Aligned with Elites): Navigating Systemic Power within Informal Institutions",
+    authors: "Christopher Sutter, Babita Bhatt, Israr Qureshi",
+    date: "2026-02-19", doi: "10.5465/amj.2023.0515",
+    abstract: "Comparative case study of social intermediaries navigating systemic power in caste-gender hierarchies. Three approaches — elite delegation, co-optation, creative accommodation — have different inclusion outcomes.",
+    topics: ["Power & Politics", "Inclusive Leadership", "Diversity in Leadership"],
+    methods: ["Qualitative", "Case Study"],
+    futureThemes: ["Diversity, Inclusion & Leadership", "Power, Politics & Leadership"]
+  },
+
+  // ── JOURNAL OF BUSINESS AND PSYCHOLOGY ──
+  {
+    id: 37, journal: "Journal of Business and Psychology", journalCode: "jbp",
+    title: "Losing Control of My Career Trajectory: The Role of Career Insecurity and Supervisor Mentoring Support in Shaping Employee Withdrawal and Mental Health",
+    authors: "Anguo Fu, Shuaihua Wang, Tengfei Guo, Zhaoyang Xin, Shenyang Hai et al.",
+    date: "2026-02-17", doi: "10.1007/s10869-026-10103-5",
+    abstract: "Shows supervisor career support mentoring mitigates the harmful effects of AI-driven career insecurity on job withdrawal and mental health. Supervisor mentoring restores perceived control in uncertain careers.",
+    topics: ["Supervisor Behavior", "Leader Wellbeing", "Leadership Development"],
+    methods: ["Multi-wave", "Survey"],
+    futureThemes: ["Leader Wellbeing & Sustainability", "Leadership Development"]
+  },
+  {
+    id: 38, journal: "Journal of Business and Psychology", journalCode: "jbp",
+    title: "Why some managers might positively evaluate subordinates with dark personality traits",
+    authors: "Eric Mercadante, Karl Aquino, Steven Heine, Daniel Skarlicki",
+    date: "2026-01-29", doi: "10.1108/jmp-11-2024-0895",
+    abstract: "Investigates why some managers positively evaluate subordinates with Machiavellianism, psychopathy, or narcissism. Suggests organizational complicity in perpetuating dark leadership at lower levels.",
+    topics: ["Dark Leadership", "Abusive Leadership", "Leader Traits"],
+    methods: ["Experimental"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leader Traits & Personality"]
+  },
+
+  // ── ADDITIONAL JOURNALS ──
+  {
+    id: 39, journal: "Journal of Managerial Psychology", journalCode: "jmp",
+    title: "Supervisor expectations for availability after-hours and employee harmonious passion: Exploring curvilinear and moderated relationships",
+    authors: "Ting Xu, Haowen Wu, Zhike Lv, Liang Shan",
+    date: "2026-02-19", doi: "10.1108/jmp-09-2023-0570",
+    abstract: "Examines the curvilinear effects of supervisor after-hours expectations on employee passionate engagement. Family-supportive supervisor behaviors buffer negative effects of high after-hours demands.",
+    topics: ["Supervisor Behavior", "Leader-Follower Dynamics", "Work-Life Balance"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Behavioral Leadership", "Leader Wellbeing & Sustainability"]
+  },
+  {
+    id: 40, journal: "Journal of Managerial Psychology", journalCode: "jmp",
+    title: "Dancing with AI: How employee-AI collaboration shapes employee creativity",
+    authors: "Peng Xie, Lu Ma, Fen Fen Tian",
+    date: "2026-02-12", doi: "10.1108/jmp-04-2024-0250",
+    abstract: "Shows that employee-AI collaboration enhances creativity through skill malleability. AI use anxiety and personal utility of AI moderate these effects. Implications for leaders managing AI-augmented workforces.",
+    topics: ["AI & Leadership", "Digital Leadership", "Leader Creativity"],
+    methods: ["Survey", "Experimental"],
+    futureThemes: ["Digital & AI Leadership", "Leadership & Innovation"]
+  },
+  {
+    id: 41, journal: "Human Resource Management", journalCode: "hrm",
+    title: "How Signals of Silence Sustain Sexual Harassment and What to Do About It",
+    authors: "Angela L. Workman-Stark, Zhanna Lyubykh, Ivana Vranjes, Lilia M. Cortina, M. Sandy Hershcovis et al.",
+    date: "2026-02-20", doi: "10.1002/hrm.70063",
+    abstract: "Explains how organizational silence signals sustain sexual harassment, creating an ongoing challenge for HR leaders. Proposes evidence-based interventions for leaders to disrupt these silence cycles.",
+    topics: ["Ethical Leadership", "Organizational Culture", "Leader Interventions"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leader Interventions"]
+  },
+  {
+    id: 42, journal: "Human Resource Management", journalCode: "hrm",
+    title: "Building High Involvement Work Systems in the Digital Era: Employee Experience-Oriented Digital HRM and Employee Involvement",
+    authors: "Wei Wei, Xiaolan Fu",
+    date: "2026-02-09", doi: "10.1002/hrm.70058",
+    abstract: "Qualitative case study of Tencent showing how digital HRM enables high involvement work systems. Leader facilitation of digital employee experience is key to sustaining worker involvement at scale.",
+    topics: ["Digital Leadership", "HR Leadership", "Strategic Leadership"],
+    methods: ["Qualitative", "Case Study"],
+    futureThemes: ["Digital & AI Leadership", "Leadership & Organizational Systems"]
+  },
+  {
+    id: 43, journal: "Human Resource Management", journalCode: "hrm",
+    title: "Why Does Large Vertical Pay Dispersion Increase Turnover Among Both Employees and Senior Managers?",
+    authors: "Jiaxin Liu, Xu Huang, Jingyu Dong, Jialing Xiao, Peter A. Bamberger et al.",
+    date: "2026-02-22", doi: "10.1002/hrm.70059",
+    abstract: "Integrates tournament and equity theories to explain why vertical pay dispersion between hierarchical levels drives turnover at all levels. Competition and perceived inequity undermine leader-follower retention.",
+    topics: ["Strategic Leadership", "Power & Politics", "Leader-Follower Dynamics"],
+    methods: ["Survey", "Archival"],
+    futureThemes: ["Strategic Leadership", "Power, Politics & Leadership"]
+  },
+  {
+    id: 44, journal: "Group & Organization Management", journalCode: "gom",
+    title: "Feeling Included in a Remote Working World: The Role of Leaders' Virtual Collaboration Behaviors",
+    authors: "Magdalena Schertler, Tarek Carls, Martina Hartner-Tiefenthaler, Stephan A. Boehm",
+    date: "2026-01-30", doi: "10.1177/10596011261420481",
+    abstract: "Shows that remote work hinders inclusion signaling. Leaders' virtual collaboration behaviors are critical mechanisms through which inclusion can be achieved in distributed settings.",
+    topics: ["Remote Work Leadership", "Inclusive Leadership", "Digital Leadership"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Digital & AI Leadership", "Diversity, Inclusion & Leadership"]
+  },
+  {
+    id: 45, journal: "Group & Organization Management", journalCode: "gom",
+    title: "Using Stretch Goals to Boost Team Creativity? The Contingent Effect of Team Resource Scarcity",
+    authors: "Xiaoqing Pan, Renqi Zhu, Bo Li, Zhongshan Zhang, Lin Pan",
+    date: "2026-02-11", doi: "10.1177/10596011261426252",
+    abstract: "Shows that stretch goals interact with team resource scarcity to affect creativity. Under resource scarcity, stretch goals can hinder rather than help. Implications for how leaders set challenging targets.",
+    topics: ["Team Leadership", "Leader Behavior", "Leadership & Innovation"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Team Leadership", "Leadership & Innovation"]
+  },
+  {
+    id: 46, journal: "Group & Organization Management", journalCode: "gom",
+    title: "Exploring Co-Regulation in Teams: Strategies to Mitigate Conflict and Burnout",
+    authors: "Ferdinando Paolo Santarpia, Valentina Sommovigo, Laura Borgogni, Arnold B. Bakker",
+    date: "2026-01-30", doi: "10.1177/10596011261421635",
+    abstract: "Integrates threat regulation and social allostatic load theories to investigate collective burnout in teams. Leader-supported co-regulation strategies buffer team-level burnout from interpersonal stressors.",
+    topics: ["Team Leadership", "Leader Wellbeing", "Leader Interventions"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Leader Wellbeing & Sustainability", "Team Leadership"]
+  },
+  {
+    id: 47, journal: "Administrative Science Quarterly", journalCode: "asq",
+    title: "Interpreting Violence: How Community Context Shapes Corporate Responses to Street Protests",
+    authors: "Forrest Briscoe, Mark R. DesJardine, Muhan Zhang",
+    date: "2026-02-19", doi: "10.1177/00018392261419416",
+    abstract: "Shows that business leaders' community embeddedness shapes how they interpret and respond to protest violence. Leaders embedded in communities view protest differently — with implications for organizational justice leadership.",
+    topics: ["Strategic Leadership", "CEO & Top Leaders", "Ethical Leadership"],
+    methods: ["Archival", "Quantitative"],
+    futureThemes: ["Strategic Leadership", "Ethical & Destructive Leadership"]
+  },
+  {
+    id: 48, journal: "Organization Science", journalCode: "os",
+    title: "Knowing Enough to Be Dangerous: 'Artificial Certainty' for Expert Authority When Using AI for Decision Making",
+    authors: "Paul M. Leonardi, Virginia Leavell",
+    date: "2026-02-18", doi: "10.1287/orsc.2023.18224",
+    abstract: "Examines how expert leaders using AI simulation tools create artificial certainty — an illusion that complex futures are knowable. Implications for how leaders exercise judgment and authority in AI-mediated decisions.",
+    topics: ["AI & Leadership", "Leader Cognition", "Digital Leadership"],
+    methods: ["Qualitative", "Comparative Case Study"],
+    futureThemes: ["Digital & AI Leadership", "Leader Cognition"]
+  },
+  {
+    id: 49, journal: "Organizational Psychology Review", journalCode: "opr",
+    title: "Theories and Models: Acting on the Difference Advances Organizational and Management Scholarship",
+    authors: "Denise M. Rousseau",
+    date: "2026-01-30", doi: "10.1177/20413866251413767",
+    abstract: "Argues for a clear distinction between leadership theories and conceptual models. Strong theories provide reliable knowledge for evidence-based leadership practice; models are preliminary propositions needing testing.",
+    topics: ["Theory Building", "Research Methods", "Leadership Science"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Research Methods & Theory", "Causal Inference"]
+  },
+  {
+    id: 50, journal: "Journal of Occupational Health Psychology", journalCode: "johp",
+    title: "What factors shape the effectiveness of a leader-focused mental health training?",
+    authors: "Kristin Hildenbrand, Anna Topakas, Jennifer K. Dimoff, Karina M. Nielsen, Kevin E. Kelloway",
+    date: "2026-02-05", doi: "10.1037/ocp0000424",
+    abstract: "Examines boundary conditions for leader mental health training effectiveness. Resources allocation and leader self-efficacy are critical moderators. Calls for more leader-focused mental health research.",
+    topics: ["Leadership Development", "Leader Wellbeing", "Leader Interventions"],
+    methods: ["Field Experiment", "Survey"],
+    futureThemes: ["Leadership Development", "Leader Wellbeing & Sustainability"]
+  },
+  {
+    id: 51, journal: "Journal of Occupational Health Psychology", journalCode: "johp",
+    title: "Dehumanized yet agentic? Abusive supervision, organizational dehumanization, burnout, and interpersonal helping",
+    authors: "Wen Zhang, Liu-qin Yang, Miaosi Li, Shumin Zheng, Xichao Zhang",
+    date: "2026-02-01", doi: "10.1037/ocp0000419",
+    abstract: "Tests sequential mediation of organizational dehumanization and (in)authenticity linking abusive supervision to employee burnout and helping. Self-efficacy moderates when abusive leaders most damage employee wellbeing.",
+    topics: ["Abusive Leadership", "Dark Leadership", "Leader-Follower Dynamics"],
+    methods: ["Multi-wave", "Survey"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leader-Follower Dynamics"]
+  },
+  {
+    id: 52, journal: "Journal of Occupational Health Psychology", journalCode: "johp",
+    title: "Beyond positivity: A review of the functional outcomes of negative emotions at work",
+    authors: "R. David Lebel, Jordan Sanders, Jochen I. Menges",
+    date: "2026-02-01", doi: "10.1037/ocp0000422",
+    abstract: "Reviews emerging evidence that negative emotions can have functional outcomes for leaders and employees. Reframes how leaders should understand and manage negative affect in organizations.",
+    topics: ["Leader Emotion", "Leader Wellbeing", "Behavioral Leadership"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Leader Emotions & Wellbeing", "Behavioral Leadership"]
+  },
+  {
+    id: 53, journal: "European Journal of Work and Organizational Psychology", journalCode: "ejwop",
+    title: "My boss is the problem: Understanding how and when supervisors with strong bottom-line mentalities impact employees' turnover intentions",
+    authors: "Darryl B. Rice, Chris Welter, Rohan Crawley, Alexis Lassiter",
+    date: "2026-01-30", doi: "10.1080/1359432x.2026.2617550",
+    abstract: "Shows that supervisors focused purely on bottom-line results increase employee turnover intentions through eroding organizational identification. Boundary conditions moderate when bottom-line leaders are most harmful.",
+    topics: ["Abusive Leadership", "Dark Leadership", "Supervisor Behavior"],
+    methods: ["Survey", "Multi-wave"],
+    futureThemes: ["Ethical & Destructive Leadership", "Behavioral Leadership"]
+  },
+  {
+    id: 54, journal: "Human Resource Management", journalCode: "hrm",
+    title: "Love of the Job: What It Is, How to Measure It, and Why It Matters for Work Outcomes",
+    authors: "Michelle Inness, Kaylee Somerville, Zhanna Lyubykh, Nick Turner, E. Kevin Kelloway et al.",
+    date: "2026-02-06", doi: "10.1002/hrm.70055",
+    abstract: "Introduces 'Love of the Job' as a higher-order affective attachment that goes beyond engagement. Leaders who foster LOJ create more committed, higher-performing workforces. New scale developed and validated.",
+    topics: ["Leader Wellbeing", "HR Leadership", "Supervisor Behavior"],
+    methods: ["Scale Development", "Survey"],
+    futureThemes: ["Leader Wellbeing & Sustainability", "Behavioral Leadership"]
+  },
+  {
+    id: 55, journal: "Human Resource Management", journalCode: "hrm",
+    title: "Scaling With Bias? The Role of Founders' HR Knowledge and Experience in Hiring and Managerial Appointments",
+    authors: "Mohamed Genedy, Lucia Naldi, Karin Hellerstedt, Johan Wiklund",
+    date: "2026-02-01", doi: "10.1002/hrm.70056",
+    abstract: "Shows that founders' cognitive biases lead to discriminatory hiring and managerial appointments during scaling. Rapid scaling without HR knowledge perpetuates gender and other biases in leadership pipelines.",
+    topics: ["Gender & Leadership", "Leadership Development", "Diversity in Leadership"],
+    methods: ["Qualitative", "Survey"],
+    futureThemes: ["Diversity, Inclusion & Leadership", "Leadership Development"]
+  },
+  {
+    id: 56, journal: "Journal of Vocational Behavior", journalCode: "jvb",
+    title: "A meta-analysis of TMX and incremental effects over LMX: An examination in different cultures",
+    authors: "Yucheng Zhang, Xin Liu, Wenrui Cao, Shan Xu, Peter Rodgers",
+    date: "2026-03-01", doi: "10.1016/j.jvb.2026.000096",
+    abstract: "Meta-analysis establishing that team-member exchange (TMX) predicts outcomes incrementally over LMX. Cultural values moderate the relative importance of leader vs. peer relationships for employee outcomes.",
+    topics: ["LMX", "Team Leadership", "Cross-Cultural Leadership"],
+    methods: ["Meta-Analysis"],
+    futureThemes: ["LMX", "Cross-Cultural Leadership"]
+  },
+  {
+    id: 57, journal: "Group & Organization Management", journalCode: "gom",
+    title: "The Role of Coercive, Normative and Mimetic Pressures in Shaping Financial Slack: A Cross-National Study",
+    authors: "Nahuel Depino-Besada, Xosé H. Vázquez, Antonio Sartal",
+    date: "2026-01-28", doi: "10.1177/10596011261420980",
+    abstract: "Cross-national panel study showing how institutional pressures shape organizational financial slack. Leaders must navigate coercive, normative, and mimetic institutional forces in resource allocation decisions.",
+    topics: ["Strategic Leadership", "Organizational Context", "CEO & Top Leaders"],
+    methods: ["Archival", "Longitudinal"],
+    futureThemes: ["Strategic Leadership", "CEO & Upper Echelons"]
+  },
+  {
+    id: 58, journal: "Journal of Managerial Psychology", journalCode: "jmp",
+    title: "Why some managers might positively evaluate subordinates with dark personality traits",
+    authors: "Eric Mercadante, Karl Aquino, Steven Heine, Daniel Skarlicki",
+    date: "2026-01-29", doi: "10.1108/jmp-11-2024-0895",
+    abstract: "Novel investigation of why certain managers favor dark-triad subordinates. Suggests organizations unwittingly perpetuate dark personalities across hierarchical levels through managerial evaluation biases.",
+    topics: ["Dark Leadership", "Leader Traits", "Abusive Leadership"],
+    methods: ["Experimental"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leader Traits & Personality"]
+  },
+  {
+    id: 59, journal: "Journal of Occupational Health Psychology", journalCode: "johp",
+    title: "Design and validation of the Intervention and Multiphase Training Transfer Assessment Questionnaire (IMTTAQ) for occupational health psychology training",
+    authors: "Cristian A. Vasquez, Karina Nielsen, Rita Chiesa et al.",
+    date: "2026-02-01", doi: "10.1037/ocp0000420",
+    abstract: "Develops and validates a comprehensive instrument for assessing training transfer in leader-focused occupational health interventions. Provides researchers a rigorous tool for evaluating leadership training effectiveness.",
+    topics: ["Leadership Development", "Leader Interventions", "Leadership Training"],
+    methods: ["Scale Development", "Multi-sample"],
+    futureThemes: ["Leadership Development", "Leader Wellbeing & Sustainability"]
+  },
+  {
+    id: 60, journal: "Journal of Business and Psychology", journalCode: "jbp",
+    title: "A Meta-Analytic Investigation on the Construct Validity of Risk Propensity at Work",
+    authors: "Don C. Zhang, Katelyn Reeves, Hannah Perkins Stark, Tyler Cowley",
+    date: "2026-01-30", doi: "10.1007/s10869-026-10102-6",
+    abstract: "Meta-analysis establishing the construct validity of risk propensity as a leadership-relevant trait using both psychometric approaches and large language models. Risk propensity predicts entrepreneurial and leadership outcomes.",
+    topics: ["Leader Traits", "Leader Cognition", "Strategic Leadership"],
+    methods: ["Meta-Analysis", "Computational/Simulation"],
+    futureThemes: ["Leader Traits & Personality", "Leader Cognition"]
+  },
+  {
+    id: 61, journal: "Human Resource Development Quarterly", journalCode: "hrdq",
+    title: "Revolutionizing Human Resource Development: A Theoretical Framework for Enhancing Effective Human-AI Collaboration",
+    authors: "Chieh-Peng Lin",
+    date: "2026-01-30", doi: "10.1002/hrdq.70012",
+    abstract: "Proposes a theoretical framework for human-AI collaboration in HRD contexts. Draws on adaptive structuration theory and affordance actualization theory. Leaders must scaffold AI tools for effective human-AI teams.",
+    topics: ["AI & Leadership", "Digital Leadership", "Leadership Development"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Digital & AI Leadership", "Leadership Development"]
+  },
+  {
+    id: 62, journal: "Organizational Psychology Review", journalCode: "opr",
+    title: "Intro to the Special Issue on Theory: Theory at the Level of the Profession",
+    authors: "Matthew A. Cronin",
+    date: "2026-02-02", doi: "10.1177/20413866261417115",
+    abstract: "Opens a special issue on theory in organizational science. Argues that leadership researchers must interrogate why the profession uses theory in the first place to avoid unproductive debates about theory within papers.",
+    topics: ["Theory Building", "Research Methods", "Leadership Science"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Research Methods & Theory", "Causal Inference"]
+  },
+  {
+    id: 63, journal: "Journal of Management", journalCode: "jom",
+    title: "\"I Hold On\": How Country Music Songwriters Cope With the Precarity of Craft Work",
+    authors: "Katrin M. Smolka, Pursey P.M.A.R. Heugens",
+    date: "2026-02-01", doi: "10.1177/01492063251398783",
+    abstract: "Studies how creative workers self-lead through precarity and rejection. Self-leadership and identity resilience are examined as mechanisms. Challenges conventional notions of leadership as a top-down phenomenon.",
+    topics: ["Self-Leadership", "Leader Identity", "Leadership Careers"],
+    methods: ["Qualitative"],
+    futureThemes: ["Followership", "Leader Identity & Development"]
+  },
+  {
+    id: 64, journal: "Journal of Organizational Behavior", journalCode: "job",
+    title: "How Does Leader-AI Collaboration Enhance Team Performance? AI Tools, Role Reduction, Reflexivity, and Self-Efficacy",
+    authors: "Pei Liu, Daniel I. Watts, Xin Li, Xiaotian Wang, Aimei Li",
+    date: "2026-02-20", doi: "10.1002/job.70070",
+    abstract: "Multi-study examination of leader-AI collaboration effects on teams through role overload reduction, reflexivity enhancement, and self-efficacy building. Older leaders show stronger AI collaboration benefits.",
+    topics: ["AI & Leadership", "Team Leadership", "Digital Leadership"],
+    methods: ["Multi-source", "Multi-wave"],
+    futureThemes: ["Digital & AI Leadership", "Team Leadership"]
+  },
+  {
+    id: 65, journal: "Academy of Management Review", journalCode: "amr",
+    title: "Reimagining Management Theory as Theater Rather than Hoax",
+    authors: "Yannick Griep",
+    date: "2026-02-12", doi: "10.5465/amr.2025.0637",
+    abstract: "A provocative commentary on management theory, arguing that leadership and management theories should be understood as performative and theatrical rather than revelatory. Challenges positivist assumptions in leadership research.",
+    topics: ["Theory Building", "Leadership Science", "Research Methods"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Research Methods & Theory", "Causal Inference"]
+  },
+  {
+    id: 66, journal: "Human Resource Management", journalCode: "hrm",
+    title: "Embracing Complexity in HRM Research: A Call for System and Process Perspectives",
+    authors: "Rebecca Hewett, Madleen Meier-Barthold",
+    date: "2026-02-11", doi: "10.1002/hrm.70060",
+    abstract: "Calls for complexity thinking in HRM and leadership research. Emphasizes that HRM systems, leadership practices, and outcomes are interlinked through complex multi-level processes not captured by variable-centric methods.",
+    topics: ["HR Leadership", "Research Methods", "Organizational Systems"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Research Methods & Theory", "Leadership & Organizational Systems"]
+  },
+  {
+    id: 67, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Who is motivated to request i-deals? Expectancy theory-based analysis in the context of older workers",
+    authors: "Imogen Sykes-Bridge, Prashant Bordia, Rajiv K. Amarnani, Patrick Garcia, Luyang Liu",
+    date: "2026-01-28", doi: "10.1111/joop.70082",
+    abstract: "Applies expectancy theory to explain when older employees seek idiosyncratic deals from supervisors. Perceived i-deal benefits and expectations of successful negotiation shape motivation. Implications for age-inclusive leadership.",
+    topics: ["Supervisor Behavior", "Inclusive Leadership", "Leader-Follower Dynamics"],
+    methods: ["Survey"],
+    futureThemes: ["Diversity, Inclusion & Leadership", "Leader-Follower Dynamics"]
+  },
+  {
+    id: 68, journal: "European Journal of Work and Organizational Psychology", journalCode: "ejwop",
+    title: "Hybrid work and daily energy dynamics: Breaks, inclusion, and evening recovery",
+    authors: "Stacey L. Parker, Niamh Dawson, Charlotte Keenan, Sabine Sonnentag, Andrew Neal et al.",
+    date: "2026-01-31", doi: "10.1080/1359432x.2026.2622933",
+    abstract: "Daily diary study showing that hybrid work creates unique energy dynamics. Leader inclusion behaviors during hybrid work days moderate recovery trajectories. Inclusive remote leadership shapes daily wellbeing.",
+    topics: ["Remote Work Leadership", "Inclusive Leadership", "Leader Wellbeing"],
+    methods: ["Daily Diary", "Experience Sampling"],
+    futureThemes: ["Digital & AI Leadership", "Diversity, Inclusion & Leadership"]
+  },
+  {
+    id: 69, journal: "Academy of Management Journal", journalCode: "amj",
+    title: "When Women Stick Together: Network Dynamics and Shared Resources Following Disruptive Events",
+    authors: "Yiftach Yarmar, Tiantian Yang, Marissa D. King",
+    date: "2026-01-30", doi: "10.5465/amj.2024.0199",
+    abstract: "Examines how disruptive events change women's network formation and resource sharing. Women who cluster networks following shocks build resilience resources. Implications for gender dynamics in leadership pipelines.",
+    topics: ["Gender & Leadership", "Network Leadership", "Diversity in Leadership"],
+    methods: ["Archival", "Longitudinal"],
+    futureThemes: ["Gender & Leadership", "Diversity, Inclusion & Leadership"]
+  },
+  {
+    id: 70, journal: "Journal of Managerial Psychology", journalCode: "jmp",
+    title: "A values-based model of contempt at work: Elicitation and functional outcomes",
+    authors: "Gerardo Alejandro Miranda Reina, Jennifer L. Welbourne",
+    date: "2026-02-02", doi: "10.1108/jmp-12-2024-0917",
+    abstract: "Examines how personal values shape elicitation of contempt toward leaders and colleagues. Contempt motivates social distancing. Implications for how leaders who violate followers' values lose relational capital.",
+    topics: ["Leader Emotion", "Ethical Leadership", "Leader-Follower Dynamics"],
+    methods: ["Survey", "Experimental"],
+    futureThemes: ["Leader Emotions & Wellbeing", "Ethical & Destructive Leadership"]
+  },
+  {
+    id: 71, journal: "Journal of Occupational and Organizational Psychology", journalCode: "joop",
+    title: "Exploring the relation between IRT estimates of within-person variability in personality and job performance",
+    authors: "Brent A. Stevenor, Michael J. Zickar, Chet Robie, Rick R. Jacobs",
+    date: "2026-02-16", doi: "10.1111/joop.70094",
+    abstract: "Uses IRT modeling to capture within-person personality variability as a predictor of performance. Leaders and supervisors may differ from subordinates in the consistency of their personality expression.",
+    topics: ["Leader Traits", "Leadership Measurement", "Research Methods"],
+    methods: ["Psychometric", "Quantitative"],
+    futureThemes: ["Leader Traits & Personality", "Research Methods & Theory"]
+  },
+  {
+    id: 72, journal: "Group & Organization Management", journalCode: "gom",
+    title: "The Role of Employee Honesty and Loyalty in the Institutionalization of Unethical Pro-Organizational Behavior",
+    authors: "Vivek Mishra, Nishant Uppal",
+    date: "2026-02-09", doi: "10.1177/10596011261425558",
+    abstract: "Proposes a process model of how unethical pro-organizational behavior becomes institutionalized. The ambiguous nature of UPB and employees' moral foundations (honesty vs. loyalty) drive this process under leader endorsement.",
+    topics: ["Ethical Leadership", "Organizational Culture", "Dark Leadership"],
+    methods: ["Theoretical/Review"],
+    futureThemes: ["Ethical & Destructive Leadership", "Leadership Climate"]
+  },
+  {
+    id: 73, journal: "Journal of Management", journalCode: "jom",
+    title: "Qualitative Research on Incumbents' Responses to Discontinuous Technologies: Distilling an Integrative Framework",
+    authors: "Juan Carlos Rivera-Prieto, Friederike Hawighorst, Andreas König, Markus Rauch",
+    date: "2026-02-18", doi: "10.1177/01492063251404470",
+    abstract: "Reviews 127 qualitative studies of organizational leaders responding to discontinuous technologies. Proposes an integrative framework of six contextual dimensions. Guides how leaders navigate technological disruption.",
+    topics: ["Strategic Leadership", "Digital Leadership", "Leader Cognition"],
+    methods: ["Systematic Review", "Qualitative"],
+    futureThemes: ["Digital & AI Leadership", "Strategic Leadership"]
+  },
+  {
+    id: 74, journal: "Human Resource Development Quarterly", journalCode: "hrdq",
+    title: "The Structure of Informal Learning in the Workplace — An Experience Sampling Approach",
+    authors: "Katja Häußermann, Tina Seufert",
+    date: "2026-01-29", doi: "10.1002/hrdq.70011",
+    abstract: "Experience sampling study clarifying the structure of informal learning in the workplace. Leader facilitation of informal learning environments is critical for employee adaptability in rapidly changing contexts.",
+    topics: ["Leadership Development", "Leader Behavior", "Organizational Learning"],
+    methods: ["Experience Sampling"],
+    futureThemes: ["Leadership Development", "Behavioral Leadership"]
+  },
+  {
+    id: 75, journal: "Organization Science", journalCode: "os",
+    title: "Knowledge Behind Firewalls: How Rivalry Among Alliance Partners Constrains Innovation Inside Firms",
+    authors: "Navid Asgari, Deepak Nayak, Ram Ranganathan, Vivek Tandon",
+    date: "2026-02-04", doi: "10.1287/orsc.2022.17230",
+    abstract: "Shows that when alliance partners compete, leaders face knowledge barriers that constrain cross-partner invention. Top leadership must design alliance governance structures to enable knowledge flow despite rivalry.",
+    topics: ["Strategic Leadership", "CEO & Top Leaders", "Leadership & Innovation"],
+    methods: ["Archival", "Quantitative"],
+    futureThemes: ["Strategic Leadership", "Leadership & Innovation"]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// TOPIC NETWORK DATA
+// ═══════════════════════════════════════════════════════════════════════
+const TOPICS_ALL = [
+  "Transformational Leadership","LMX","Gender & Leadership","Directive Leadership",
+  "AI & Leadership","Ethical Leadership","Followership","Collective Leadership",
+  "CEO & Top Leaders","Leader Emotion","Power & Politics","Team Leadership",
+  "Abusive Leadership","Voice & Silence","Remote Work Leadership","Leader Wellbeing",
+  "Leadership Development","Strategic Leadership","Inclusive Leadership","Leader Cognition",
+  "Leader Identity","Research Methods","Dark Leadership","Adaptive Leadership",
+  "Self-Leadership","Cross-Cultural Leadership","Mindful Leadership","Supervisor Behavior"
+];
+
+const TOPIC_CONNECTIONS = [
+  ["Transformational Leadership","Team Leadership"],["Transformational Leadership","Follower Motivation"],
+  ["Transformational Leadership","LMX"],["Transformational Leadership","Ethical Leadership"],
+  ["LMX","Team Leadership"],["LMX","Leader-Follower Dynamics"],["LMX","Voice & Silence"],
+  ["LMX","Leader Emotion"],["Gender & Leadership","Inclusive Leadership"],
+  ["Gender & Leadership","Power & Politics"],["Gender & Leadership","Leadership Development"],
+  ["Directive Leadership","Transformational Leadership"],["Directive Leadership","Adaptive Leadership"],
+  ["AI & Leadership","Team Leadership"],["AI & Leadership","Strategic Leadership"],
+  ["AI & Leadership","Remote Work Leadership"],["Ethical Leadership","Abusive Leadership"],
+  ["Ethical Leadership","Organizational Culture"],["Ethical Leadership","Power & Politics"],
+  ["Followership","Leader-Follower Dynamics"],["Followership","LMX"],["Followership","Self-Leadership"],
+  ["Collective Leadership","Team Leadership"],["Collective Leadership","Adaptive Leadership"],
+  ["CEO & Top Leaders","Strategic Leadership"],["CEO & Top Leaders","Leader Cognition"],
+  ["CEO & Top Leaders","Upper Echelons"],["Leader Emotion","Leader Wellbeing"],
+  ["Leader Emotion","Ethical Leadership"],["Power & Politics","Strategic Leadership"],
+  ["Abusive Leadership","Dark Leadership"],["Abusive Leadership","Leader Wellbeing"],
+  ["Voice & Silence","Leader Behavior"],["Remote Work Leadership","Inclusive Leadership"],
+  ["Leadership Development","Leader Wellbeing"],["Strategic Leadership","Leader Cognition"],
+  ["Inclusive Leadership","Team Leadership"],["Leader Identity","Self-Leadership"],
+  ["Leader Identity","Leadership Development"],["Mindful Leadership","Leader Wellbeing"],
+  ["Supervisor Behavior","LMX"],["Supervisor Behavior","Leader Wellbeing"],
+  ["Cross-Cultural Leadership","Inclusive Leadership"],["Research Methods","Theory Building"],
+  ["Adaptive Leadership","Context-Specific Leadership"],["Dark Leadership","Ethical Leadership"]
+];
+
+// Count articles per topic
+function getTopicArticleCount(topicName) {
+  return ARTICLES.filter(a => 
+    a.topics.some(t => t.toLowerCase().includes(topicName.toLowerCase().replace(/ &.*/,'').split(' ')[0].toLowerCase()))
+  ).length;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FUTURE THEMES DATA
+// ═══════════════════════════════════════════════════════════════════════
+const FUTURE_THEMES = [
+  {
+    id: "ai",
+    icon: "AI",
+    title: "AI, Technology & Leadership",
+    description: "The most rapidly growing topic in current leadership research. Emerging questions span leader-AI collaboration, algorithmic authority, and how AI reshapes leader-follower dynamics.",
+    articleIds: [24, 40, 44, 48, 61, 64, 73],
+    directions: [
+      { bold: "Leader-AI teaming:", text: "How do different leadership styles interact with AI tool adoption? Are transformational leaders better at leveraging AI's collaborative potential?" },
+      { bold: "Algorithmic authority:", text: "When AI makes recommendations, how do followers evaluate leader judgment that contradicts AI output?" },
+      { bold: "Age & AI leadership:", text: "Research (Liu et al., 2026) shows older leaders benefit more from AI collaboration — what are the mechanisms, and does this vary by domain?" },
+      { bold: "Trust calibration:", text: "How do leaders learn to calibrate trust in AI recommendations over time, and what happens when AI is overconfident?" },
+      { bold: "Digital inclusive leadership:", text: "How can leaders use technology platforms to promote inclusion in hybrid/remote settings (Schertler et al., 2026)?" }
+    ]
+  },
+  {
+    id: "gender",
+    icon: "GDI",
+    title: "Gender, Diversity & Inclusion in Leadership",
+    description: "A consistently strong theme. Recent work focuses on mechanisms of bias, contextual moderators, women's network dynamics, and inclusive virtual leadership.",
+    articleIds: [8, 10, 17, 22, 36, 44, 55, 69],
+    directions: [
+      { bold: "Motive-driven bias:", text: "Oh et al. (2026) shift focus to observer motives. Future research should test which specific observer motives (status protection, ideology) are most potent in different organizational contexts." },
+      { bold: "Competence shields:", text: "Feng et al. (2026) show competence offsets dominance penalties. What other attributes could serve as shields for women leaders?" },
+      { bold: "Intersectionality:", text: "Most studies still examine gender in isolation. Research on intersecting identities (race x gender x age) in leadership evaluation is scarce." },
+      { bold: "Virtual inclusion:", text: "How do leaders' virtual behaviors specifically enable inclusion for gender minorities in distributed teams?" },
+      { bold: "Pipeline leakage:", text: "Genedy et al. (2026) show founder bias shapes early managerial appointments. Longitudinal research on how gender bias compounds across leadership pipeline stages is needed." }
+    ]
+  },
+  {
+    id: "ethics",
+    icon: "ETH",
+    title: "Ethical, Dark & Destructive Leadership",
+    description: "Persistent research interest in both ethical leadership and its shadow. New work examines institutionalization of unethical behavior, abusive supervision mechanisms, and organizational silence.",
+    articleIds: [21, 28, 38, 41, 51, 53, 58, 70, 72],
+    directions: [
+      { bold: "Institutionalization of darkness:", text: "Mishra & Uppal (2026) show how UPB becomes normalized. Future research should map how leader endorsement turns individual dark behaviors into organizational norms." },
+      { bold: "Organizational silence cycles:", text: "Workman-Stark et al. (2026) reveal how silence sustains harassment. Intervention research testing how leaders can interrupt these cycles in different cultural contexts is needed." },
+      { bold: "Observer dynamics:", text: "Most ethical leadership research focuses on targets. Research on bystander cognition and intervention (Jennings et al., 2026) is an emerging opportunity." },
+      { bold: "Bottom-line mentality boundaries:", text: "Rice et al. (2026) show BLM supervisors harm retention. What organizational structures buffer against BLM leadership's harmful effects?" },
+      { bold: "Recovery from dark leadership:", text: "How do organizations and teams recover from episodes of abusive supervision or dark leadership? Longitudinal recovery research is scarce." }
+    ]
+  },
+  {
+    id: "follower",
+    icon: "FLW",
+    title: "Followership & Leader-Follower Dynamics",
+    description: "Growing recognition that leadership is co-created between leaders and followers. New measurement tools, evolutionary frameworks, and dyadic process models are emerging.",
+    articleIds: [9, 11, 20, 23, 25, 27, 34, 56, 67],
+    directions: [
+      { bold: "Fundamental follower needs:", text: "Sheng et al. (2026) develop a new FFNI. Future research should examine how follower need profiles differ across cultural contexts, levels, and career stages." },
+      { bold: "Voice solicitation backfire:", text: "Song et al. (2026) show dominant leaders undermine voice. Research on what makes solicited voice feel authentic vs. performative across leadership styles is needed." },
+      { bold: "LMX differentiation effects:", text: "Epitropaki et al. (2026) show LMX differentiation ripples to customers. Mapping these trickle-out effects across industries and team compositions is an emerging area." },
+      { bold: "Dyadic temporal dynamics:", text: "Leader categorization research (Young et al., 2026) shows prototypes shift over time. Intensive longitudinal designs tracking dyadic relationship evolution are needed." },
+      { bold: "Envy in leader-follower relationships:", text: "Xu et al. (2026) show supervisor envy shapes LMX. More research on the full range of 'dark' emotions — contempt, shame, envy — between leaders and followers is needed." }
+    ]
+  },
+  {
+    id: "digital",
+    icon: "REM",
+    title: "Remote, Hybrid & Digital Leadership",
+    description: "Post-pandemic institutionalization of remote/hybrid work has generated rich questions about how leadership translates across physical boundaries.",
+    articleIds: [15, 29, 30, 44, 68, 73],
+    directions: [
+      { bold: "Inclusion signaling failures:", text: "Schertler et al. (2026) show remote work hinders inclusion cues. Research identifying specific virtual leader behaviors that most effectively signal inclusion is needed." },
+      { bold: "Daily energy rhythms:", text: "Parker et al. (2026) reveal hybrid work creates unique daily energy dynamics. More within-person designs tracking how leader behaviors shape daily recovery in hybrid settings are needed." },
+      { bold: "Boundary management cascades:", text: "Do leader boundary preferences cascade to follower boundary behavior? Research on leader modeling effects in hybrid work is sparse." },
+      { bold: "Global hybrid leadership:", text: "Most remote work studies are Western. Cross-national research on how cultural values shape optimal remote leadership behaviors is a major gap." },
+      { bold: "Leader wellbeing in digital work:", text: "Most attention has been on follower wellbeing. How do remote work structures affect leaders' own recovery, creativity, and performance?" }
+    ]
+  },
+  {
+    id: "ceo",
+    icon: "CEO",
+    title: "CEO, Upper Echelons & Strategic Leadership",
+    description: "Continued interest in how top leader characteristics shape firm behavior, with new attention to CEO cognitive biases, values, passion, and foresight.",
+    articleIds: [14, 16, 32, 33, 35, 47, 57, 75],
+    directions: [
+      { bold: "CEO foresight:", text: "Thatchenkery (2026) shows experience enables competitor foresight. Research on what other forms of executive experience build which types of strategic foresight is needed." },
+      { bold: "Values vs. passion:", text: "Neville et al. (2026) introduce CEO passion alongside values. How do these two motivational constructs interact in driving strategic decisions across different stakeholder demands?" },
+      { bold: "Overconfidence contingencies:", text: "Xu et al. (2026) show overconfident CEOs outperform in acquisition waves. Mapping the full boundary conditions of when CEO overconfidence helps vs. harms is a rich agenda." },
+      { bold: "Value imprinting at transitions:", text: "Welbourne et al. (2026) show IPO-era values persist 20 years. Research on other transformational events (M&A, CEO succession) as imprinting opportunities is needed." },
+      { bold: "Institutional complexity leadership:", text: "Leaders operate under coercive, normative, and mimetic pressures simultaneously. How do CEOs manage conflicting institutional demands while maintaining authentic strategy?" }
+    ]
+  },
+  {
+    id: "collective",
+    icon: "COL",
+    title: "Collective, Shared & Distributed Leadership",
+    description: "Growing theoretical and empirical attention to leadership as a group-level, emergent phenomenon that is distributed across multiple actors.",
+    articleIds: [4, 17, 45, 46],
+    directions: [
+      { bold: "Emergence mechanisms:", text: "Acton et al. (2026) use agent-based modeling to show how collective leadership emerges. Empirical tests of these emergence mechanisms using intensive longitudinal data are needed." },
+      { bold: "Skip-level leadership:", text: "Schilpzand et al. (2026) provide the first review of skip-level leadership. Almost every proposed moderator and mechanism is an untested future direction." },
+      { bold: "Shared leadership development:", text: "How do teams develop shared leadership capacity over time? Training and intervention research is sparse." },
+      { bold: "Collective leadership in crises:", text: "Extreme contexts (operating rooms, military units, disaster response) offer natural laboratories for studying collective leadership under pressure." },
+      { bold: "Measurement innovation:", text: "How should collective leadership be measured? Social network analysis, behavioral observation, and computational methods all offer promise." }
+    ]
+  },
+  {
+    id: "wellbeing",
+    icon: "WLB",
+    title: "Leader & Follower Wellbeing",
+    description: "The wellbeing of leaders themselves — not just followers — has become a major research priority, with attention to mental health training, sustainability, and recovery.",
+    articleIds: [26, 30, 37, 46, 50, 51, 52, 54, 59],
+    directions: [
+      { bold: "Leader mental health training:", text: "Hildenbrand et al. (2026) identify factors shaping training effectiveness. More field experimental research testing leader mental health interventions across industries is needed." },
+      { bold: "Leader sustainability:", text: "Can leadership behaviors that benefit followers harm the leader? More research on the costs of leadership (burnout, resource depletion, moral exhaustion) is needed." },
+      { bold: "Mindful leadership breadth:", text: "Feng et al. (2026) show mindful leadership benefits families. Research on the full reach of mindful leadership across social domains (community, physical health, relationships) is nascent." },
+      { bold: "Negative emotion functionality:", text: "Lebel et al. (2026) show negative emotions can be functional. Leadership research has over-emphasized positive states — research on when and how leaders harness negative emotions is needed." },
+      { bold: "Recovery experiences of leaders:", text: "Most recovery research focuses on employees. Leader-specific recovery needs, resources, and trajectories are underresearched." }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+let activeJournals = new Set();
+let activeTopics = new Set();
+let activeMethods = new Set();
+let activeTime = 'all';
+let activeThemeId = null;
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
+function init() {
+  // Set initial display states
+  document.getElementById('panel-overview').style.display = 'block';
+  document.getElementById('panel-network').style.display = 'none';
+  document.getElementById('panel-themes').style.display = 'none';
+  document.getElementById('panel-brainstorm').style.display = 'none';
+
+  // Load custom articles from storage first, then render
+  loadCustomArticles().then(() => {
+    buildFilters();
+    renderArticles(ARTICLES);
+    updateStats(ARTICLES);
+  });
+
+  setTimeout(() => {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    setTimeout(() => document.getElementById('loadingScreen').remove(), 500);
+  }, 1600);
+}
+
+function buildFilters() {
+  // Journals
+  const journals = [...new Set(ARTICLES.map(a => a.journal))].sort();
+  const jContainer = document.getElementById('journalChips');
+  jContainer.innerHTML = '';
+  journals.forEach(j => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.textContent = getJournalAbbr(j);
+    chip.title = j;
+    chip.onclick = () => toggleFilter(chip, activeJournals, j);
+    jContainer.appendChild(chip);
+  });
+
+  // Topics
+  const allTopics = [...new Set(ARTICLES.flatMap(a => a.topics))].sort();
+  const tContainer = document.getElementById('topicChips');
+  tContainer.innerHTML = '';
+  allTopics.forEach(t => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.textContent = t;
+    chip.onclick = () => toggleFilter(chip, activeTopics, t);
+    tContainer.appendChild(chip);
+  });
+
+  // Methods
+  const allMethods = [...new Set(ARTICLES.flatMap(a => a.methods))].sort();
+  const mContainer = document.getElementById('methodChips');
+  mContainer.innerHTML = '';
+  allMethods.forEach(m => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.textContent = m;
+    chip.onclick = () => toggleFilter(chip, activeMethods, m);
+    mContainer.appendChild(chip);
+  });
+
+  // Quick brainstorm topics (only build once)
+  const qtContainer = document.getElementById('quickTopics');
+  if (qtContainer && !qtContainer.hasChildNodes()) {
+    const quickList = ["Transformational leadership", "LMX / Leader-member exchange", "Gender bias in leadership", "AI and leadership", "Collective leadership emergence", "Leader wellbeing", "Ethical leadership", "Followership", "Skip-level leadership", "Voice and silence", "CEO decision-making", "Remote leadership inclusion"];
+  quickList.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-topic';
+    btn.textContent = t;
+    btn.onclick = () => {
+      document.getElementById('brainstormInput').value = `I'm researching ${t}`;
+      runBrainstorm();
+    };
+    qtContainer.appendChild(btn);
+  });
+  } // end if quickTopics empty
+
+  // Theme cards (only build once)
+  if (!document.getElementById('themeCards').hasChildNodes()) buildThemeCards();
+}
+
+function getJournalAbbr(journal) {
+  const map = {
+    "Leadership Quarterly": "LQ",
+    "Journal of Applied Psychology": "JAP",
+    "Journal of Management": "JOM",
+    "Journal of Occupational and Organizational Psychology": "JOOP",
+    "Journal of Organizational Behavior": "JOB",
+    "Personnel Psychology": "PP",
+    "Academy of Management Journal": "AMJ",
+    "Academy of Management Review": "AMR",
+    "Journal of Business and Psychology": "JBP",
+    "Journal of Managerial Psychology": "JMP",
+    "Human Resource Management": "HRM",
+    "Group & Organization Management": "GOM",
+    "Administrative Science Quarterly": "ASQ",
+    "Organization Science": "OS",
+    "Organizational Psychology Review": "OPR",
+    "Journal of Occupational Health Psychology": "JOHP",
+    "European Journal of Work and Organizational Psychology": "EJWOP",
+    "Human Resource Development Quarterly": "HRDQ",
+    "Journal of Vocational Behavior": "JVB"
+  };
+  return map[journal] || journal.split(' ').map(w=>w[0]).join('');
+}
+
+function getJournalColorClass(code) {
+  const map = { lq:'j-lq', jap:'j-jap', jom:'j-jom', joop:'j-joop', job:'j-job', pp:'j-pp', amj:'j-amj' };
+  return map[code] || 'j-other';
+}
+
+function toggleFilter(chip, set, value) {
+  if (set.has(value)) { set.delete(value); chip.classList.remove('active'); }
+  else { set.add(value); chip.classList.add('active'); }
+  applyFilters();
+}
+
+function setTime(chip, value) {
+  document.querySelectorAll('[data-time]').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  activeTime = value;
+  applyFilters();
+}
+
+function resetFilters() {
+  activeJournals.clear(); activeTopics.clear(); activeMethods.clear(); activeTime = 'all';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-time="all"]').classList.add('active');
+  document.getElementById('searchInput').value = '';
+  applyFilters();
+}
+
+function applyFilters() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+  const cutoff = new Date();
+
+  let filtered = ARTICLES.filter(a => {
+    if (activeJournals.size && !activeJournals.has(a.journal)) return false;
+    if (activeTopics.size && !a.topics.some(t => activeTopics.has(t))) return false;
+    if (activeMethods.size && !a.methods.some(m => activeMethods.has(m))) return false;
+    if (activeTime !== 'all') {
+      const days = parseInt(activeTime);
+      const articleDate = new Date(a.date);
+      const threshold = new Date(); threshold.setDate(threshold.getDate() - days);
+      if (articleDate < threshold) return false;
+    }
+    if (query) {
+      const searchStr = (a.title + a.authors + a.abstract + a.topics.join(' ')).toLowerCase();
+      if (!searchStr.includes(query)) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (sort === 'date-desc') return new Date(b.date) - new Date(a.date);
+    if (sort === 'date-asc') return new Date(a.date) - new Date(b.date);
+    if (sort === 'journal') return a.journal.localeCompare(b.journal);
+    if (sort === 'title') return a.title.localeCompare(b.title);
+    return 0;
+  });
+
+  renderArticles(filtered);
+  updateStats(filtered);
+}
+
+function renderArticles(articles) {
+  const grid = document.getElementById('articlesGrid');
+  const noResults = document.getElementById('noResults');
+  grid.innerHTML = '';
+
+  if (!articles.length) {
+    noResults.style.display = 'block';
+    return;
+  }
+  noResults.style.display = 'none';
+
+  articles.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'article-card';
+    card.onclick = () => openArticleModal(a);
+
+    const abbr = getJournalAbbr(a.journal);
+    const colorClass = getJournalColorClass(a.journalCode);
+    const dateStr = new Date(a.date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+    const topicTags = a.topics.slice(0,3).map(t => {
+      const cls = getTopicClass(t);
+      return `<span class="tag ${cls}">${t}</span>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="card-journal">
+        <span class="card-journal-badge ${colorClass}">${abbr}</span>
+        ${a.journal}
+      </div>
+      <div class="card-title">${a.title}</div>
+      <div class="card-authors">${a.authors}</div>
+      ${a.abstract ? `<div class="card-abstract">${a.abstract}</div>` : ''}
+      <div class="card-tags">${topicTags}</div>
+      <div class="card-footer">
+        <span class="card-date">${dateStr}</span>
+        <a class="card-link" href="https://doi.org/${a.doi}" target="_blank" onclick="e=>e.stopPropagation()">
+          View Article →
+        </a>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function getTopicClass(topic) {
+  const t = topic.toLowerCase();
+  if (t.includes('transform')) return 't-transformational';
+  if (t.includes('lmx') || t.includes('leader-member')) return 't-lmx';
+  if (t.includes('gender') || t.includes('women') || t.includes('diversity') || t.includes('inclusion')) return 't-gender';
+  if (t.includes('directive') || t.includes('adaptive')) return 't-directive';
+  if (t.includes('ai') || t.includes('digital') || t.includes('tech') || t.includes('remote')) return 't-ai';
+  if (t.includes('ethic') || t.includes('moral') || t.includes('voice')) return 't-ethical';
+  if (t.includes('follower')) return 't-followership';
+  if (t.includes('collective') || t.includes('shared') || t.includes('team')) return 't-teams';
+  if (t.includes('wellb') || t.includes('mental') || t.includes('health')) return 't-wellbeing';
+  if (t.includes('ceo') || t.includes('upper') || t.includes('strategic')) return 't-ceo';
+  if (t.includes('emotion')) return 't-emotion';
+  if (t.includes('power') || t.includes('politics')) return 't-power';
+  return 't-directive';
+}
+
+function updateStats(articles) {
+  document.getElementById('visibleCount').textContent = articles.length;
+  const journals = new Set(articles.map(a => a.journal));
+  document.getElementById('journalCount').textContent = journals.size;
+}
+
+function openArticleModal(article) {
+  const modal = document.getElementById('articleModal');
+  const content = document.getElementById('modalContent');
+  const abbr = getJournalAbbr(article.journal);
+  const colorClass = getJournalColorClass(article.journalCode);
+  const dateStr = new Date(article.date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  const topicTags = article.topics.map(t => {
+    const cls = getTopicClass(t);
+    return `<span class="tag ${cls}">${t}</span>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="modal-journal">
+      <span class="card-journal-badge ${colorClass}">${abbr}</span>
+      ${article.journal} · ${dateStr}
+    </div>
+    <div class="modal-title">${article.title}</div>
+    <div class="modal-authors">${article.authors}</div>
+    ${article.abstract ? `<div class="modal-abstract">${article.abstract}</div>` : '<div class="modal-abstract" style="color:var(--mist);font-style:italic">Abstract not available — click "View Full Article" to access.</div>'}
+    <div class="modal-tags">${topicTags}</div>
+    <div style="margin-bottom:0.75rem">
+      <div class="filter-label" style="margin-bottom:0.4rem">Method Types</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">${article.methods.map(m=>`<span class="tag t-directive">${m}</span>`).join('')}</div>
+    </div>
+    <div class="modal-footer">
+      <a class="btn-primary" href="https://doi.org/${article.doi}" target="_blank" style="text-decoration:none">View Full Article →</a>
+      <button class="btn-secondary" onclick="closeModal()">Close</button>
+    </div>
+  `;
+
+  modal.classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('articleModal').classList.remove('visible');
+}
+
+document.getElementById('articleModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// NETWORK — Canvas-rendered D3 force layout (topic + article nodes)
+// ═══════════════════════════════════════════════════════════════════════
+let networkBuilt = false;
+let _sim = null, _nodes = [], _links = [];
+let _cvs = null, _ctx = null, _W = 0, _H = 0;
+let _tx = 0, _ty = 0, _tk = 1;
+let _drag = null, _panning = false;
+let _panX0 = 0, _panY0 = 0, _ptx0 = 0, _pty0 = 0;
+
+const AREA_COLORS = {
+  'Transformational': '#e8855a',
+  'LMX & Dyadic':     '#5ab4e8',
+  'Gender & DEI':     '#e05aaa',
+  'AI & Digital':     '#4dd9ac',
+  'Ethical & Dark':   '#e8c85a',
+  'Followership':     '#b05ae8',
+  'CEO & Strategy':   '#e85a5a',
+  'Teams':            '#5ae870',
+  'Remote & Hybrid':  '#5a8ee8',
+  'Wellbeing':        '#e8a05a',
+  'Collective':       '#c8e85a',
+  'Methods':          '#8aa8c0',
+};
+
+function _area(topics) {
+  const t = topics.join(' ').toLowerCase();
+  if (t.includes('transform') || t.includes('directive') || t.includes('adaptive leadership') || t.includes('mindful')) return 'Transformational';
+  if (t.includes('lmx') || t.includes('leader-member') || t.includes('leader follower') || t.includes('supervisor behavior')) return 'LMX & Dyadic';
+  if (t.includes('gender') || t.includes('women') || t.includes('diversity') || t.includes('inclusion') || t.includes('cross-cultural') || t.includes('immigrant')) return 'Gender & DEI';
+  if (t.includes('ai ') || t.includes(' ai') || t.includes('digital') || t.includes('algorithm') || t.includes('technology')) return 'AI & Digital';
+  if (t.includes('ethic') || t.includes('abusive') || t.includes('dark') || t.includes('moral') || t.includes('voice') || t.includes('silence') || t.includes('harassment')) return 'Ethical & Dark';
+  if (t.includes('follower') && !t.includes('leader')) return 'Followership';
+  if (t.includes('ceo') || t.includes('strategic') || t.includes('upper echelon') || t.includes('top management')) return 'CEO & Strategy';
+  if (t.includes('team') || t.includes('group dynamics') || t.includes('collective performance')) return 'Teams';
+  if (t.includes('remote') || t.includes('hybrid') || t.includes('virtual') || t.includes('work-life') || t.includes('boundary')) return 'Remote & Hybrid';
+  if (t.includes('wellb') || t.includes('burnout') || t.includes('mental') || t.includes('recovery') || t.includes('emotion')) return 'Wellbeing';
+  if (t.includes('collective lead') || t.includes('shared lead') || t.includes('distributed') || t.includes('emergence') || t.includes('skip')) return 'Collective';
+  return 'Methods';
+}
+
+function _buildData() {
+  const tc = {};
+  ARTICLES.forEach(a => a.topics.forEach(t => { tc[t] = (tc[t]||0)+1; }));
+
+  const tNodes = Object.entries(tc).map(([lbl, cnt]) => ({
+    id: 'T'+lbl, label: lbl, type: 'topic', count: cnt,
+    area: _area([lbl]), r: 9 + Math.sqrt(cnt)*6
+  }));
+
+  const aNodes = ARTICLES.map(a => ({
+    id: 'A'+a.id, label: a.title, type: 'article',
+    area: _area(a.topics), artId: a.id, journal: a.journal, r: 5
+  }));
+
+  const links = [];
+  ARTICLES.forEach(a => {
+    a.topics.forEach(t => {
+      if (tc[t]) links.push({ source: 'A'+a.id, target: 'T'+t });
+    });
+  });
+
+  // topic-topic co-occurrence (share ≥2 articles)
+  const ta = {};
+  ARTICLES.forEach(a => a.topics.forEach(t => { (ta[t] = ta[t]||new Set()).add(a.id); }));
+  const tn = Object.keys(tc);
+  for (let i = 0; i < tn.length; i++) {
+    for (let j = i+1; j < tn.length; j++) {
+      let sh = 0;
+      ta[tn[i]].forEach(x => { if (ta[tn[j]].has(x)) sh++; });
+      if (sh >= 2) links.push({ source: 'T'+tn[i], target: 'T'+tn[j], tt: true });
+    }
+  }
+
+  return { nodes: [...tNodes, ...aNodes], links };
+}
+
+function buildNetwork() {
+  if (networkBuilt) return;
+  // Double rAF ensures layout is complete before we measure
+  requestAnimationFrame(() => requestAnimationFrame(_startNetwork));
+}
+
+function _startNetwork() {
+  const wrap = document.getElementById('network-canvas-wrap');
+  if (!wrap) return;
+
+  _W = wrap.offsetWidth;
+  _H = wrap.offsetHeight;
+
+  // If still zero, the panel might not be fully visible — retry
+  if (_W < 10 || _H < 10) {
+    setTimeout(_startNetwork, 100);
+    return;
+  }
+
+  networkBuilt = true;
+
+  // Set wrap height explicitly
+  wrap.style.height = _H + 'px';
+
+  // Create canvas
+  _cvs = document.createElement('canvas');
+  _cvs.width = _W;
+  _cvs.height = _H;
+  _cvs.style.cssText = `display:block;width:${_W}px;height:${_H}px;cursor:grab;`;
+  wrap.insertBefore(_cvs, wrap.firstChild);
+  _ctx = _cvs.getContext('2d');
+
+  // Legend
+  const li = document.getElementById('legend-items');
+  li.innerHTML = '';
+  Object.entries(AREA_COLORS).forEach(([name, col]) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:11px;color:rgba(255,255,255,0.7);';
+    d.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0"></span>${name}`;
+    li.appendChild(d);
+  });
+
+  const { nodes, links } = _buildData();
+  _nodes = nodes;
+  _links = links;
+
+  // Scatter nodes randomly to start
+  _nodes.forEach(n => { n.x = _W/2 + (Math.random()-0.5)*300; n.y = _H/2 + (Math.random()-0.5)*300; });
+
+  _sim = d3.forceSimulation(_nodes)
+    .force('link', d3.forceLink(_links).id(d=>d.id)
+      .distance(d => d.tt ? 70 : 38).strength(d => d.tt ? 0.15 : 0.55))
+    .force('charge', d3.forceManyBody().strength(d => d.type==='topic' ? -260 : -28))
+    .force('center', d3.forceCenter(_W/2, _H/2))
+    .force('collide', d3.forceCollide(d => d.r + 2).strength(0.8))
+    .force('x', d3.forceX(_W/2).strength(0.02))
+    .force('y', d3.forceY(_H/2).strength(0.02))
+    .on('tick', _draw);
+
+  // Events
+  _cvs.addEventListener('mousedown',  _md);
+  _cvs.addEventListener('mousemove',  _mm);
+  _cvs.addEventListener('mouseup',    _mu);
+  _cvs.addEventListener('click',      _mc);
+  _cvs.addEventListener('wheel',      _mw, { passive: false });
+  _cvs.addEventListener('mouseleave', _mu);
+}
+
+function _hex2rgba(h, a) {
+  const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function _draw() {
+  _ctx.clearRect(0, 0, _W, _H);
+  _ctx.save();
+  _ctx.translate(_tx, _ty);
+  _ctx.scale(_tk, _tk);
+
+  // Draw links
+  _links.forEach(lk => {
+    const s = lk.source, t = lk.target;
+    if (typeof s !== 'object') return;
+    _ctx.beginPath();
+    _ctx.moveTo(s.x, s.y);
+    _ctx.lineTo(t.x, t.y);
+    const col = AREA_COLORS[s.area] || '#fff';
+    _ctx.strokeStyle = lk.tt ? _hex2rgba(col, 0.4) : _hex2rgba(col, 0.16);
+    _ctx.lineWidth = lk.tt ? 1.5 : 0.7;
+    _ctx.stroke();
+  });
+
+  // Draw nodes
+  _nodes.forEach(n => {
+    if (n.x == null) return;
+    const col = AREA_COLORS[n.area] || '#8aa8c0';
+    _ctx.beginPath();
+    _ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+    _ctx.fillStyle = _hex2rgba(col, n.type==='topic' ? 0.8 : 0.55);
+    _ctx.fill();
+    _ctx.strokeStyle = col;
+    _ctx.lineWidth = n.type==='topic' ? 2 : 1;
+    _ctx.stroke();
+
+    // Labels for topic nodes
+    if (n.type === 'topic' && n.r > 11) {
+      const fs = Math.min(11, Math.max(7, n.r * 0.48));
+      _ctx.font = `600 ${fs}px "DM Sans",sans-serif`;
+      _ctx.fillStyle = 'rgba(255,255,255,0.93)';
+      _ctx.textAlign = 'center';
+      _ctx.textBaseline = 'middle';
+      const words = n.label.split(' ');
+      if (words.length <= 2) {
+        _ctx.fillText(n.label.length > 18 ? n.label.slice(0,16)+'..' : n.label, n.x, n.y);
+      } else {
+        const m = Math.ceil(words.length/2);
+        _ctx.fillText(words.slice(0,m).join(' '), n.x, n.y - fs*0.65);
+        _ctx.fillText(words.slice(m).join(' '),   n.x, n.y + fs*0.65);
+      }
+    }
+  });
+
+  _ctx.restore();
+}
+
+function _s2w(sx, sy) {
+  return { x: (sx - _tx)/_tk, y: (sy - _ty)/_tk };
+}
+
+function _hit(sx, sy) {
+  const w = _s2w(sx, sy);
+  // Topic nodes first (on top)
+  for (let i = _nodes.length-1; i >= 0; i--) {
+    const n = _nodes[i];
+    const dx = n.x - w.x, dy = n.y - w.y;
+    if (dx*dx + dy*dy <= (n.r+3)*(n.r+3)) return n;
+  }
+  return null;
+}
+
+function _getXY(e) {
+  const r = _cvs.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function _md(e) {
+  const {x,y} = _getXY(e);
+  const h = _hit(x,y);
+  if (h) {
+    _drag = h;
+    const w = _s2w(x,y);
+    _drag._ox = h.x - w.x;
+    _drag._oy = h.y - w.y;
+    h.fx = h.x; h.fy = h.y;
+    _sim.alphaTarget(0.3).restart();
+    _cvs.style.cursor = 'grabbing';
+  } else {
+    _panning = true;
+    _panX0 = e.clientX; _panY0 = e.clientY;
+    _ptx0 = _tx; _pty0 = _ty;
+    _cvs.style.cursor = 'grabbing';
+  }
+}
+
+function _mm(e) {
+  const {x,y} = _getXY(e);
+  if (_drag) {
+    const w = _s2w(x,y);
+    _drag.fx = w.x + _drag._ox;
+    _drag.fy = w.y + _drag._oy;
+  } else if (_panning) {
+    _tx = _ptx0 + (e.clientX - _panX0);
+    _ty = _pty0 + (e.clientY - _panY0);
+    _draw();
+  } else {
+    const h = _hit(x,y);
+    const tip = document.getElementById('network-tooltip');
+    if (h) {
+      _cvs.style.cursor = 'pointer';
+      const col = AREA_COLORS[h.area]||'#fff';
+      tip.innerHTML = h.type === 'topic'
+        ? `<strong style="color:${col}">${h.label}</strong><br><span style="opacity:.7">${h.count} article${h.count!==1?'s':''} · ${h.area}</span>`
+        : `<span style="opacity:.5;font-size:.7rem">${getJournalAbbr(h.journal)}</span><br>${h.label.slice(0,80)}${h.label.length>80?'…':''}`;
+      tip.style.left = (e.clientX+14)+'px';
+      tip.style.top  = (e.clientY-8)+'px';
+      tip.style.opacity = '1';
+    } else {
+      _cvs.style.cursor = 'grab';
+      tip.style.opacity = '0';
+    }
+  }
+}
+
+function _mu(e) {
+  if (_drag) { _drag.fx=null; _drag.fy=null; _sim.alphaTarget(0); _drag=null; }
+  _panning = false;
+  if (_cvs) _cvs.style.cursor = 'grab';
+}
+
+let _clickTimer = null;
+function _mc(e) {
+  if (_panning) return;
+  const {x,y} = _getXY(e);
+  const h = _hit(x,y);
+  if (h) _showNodeInfo(h);
+}
+
+function _mw(e) {
+  e.preventDefault();
+  const {x,y} = _getXY(e);
+  const delta = e.deltaY < 0 ? 1.15 : 0.87;
+  const nk = Math.max(0.2, Math.min(5, _tk * delta));
+  _tx = x - (x - _tx) * (nk / _tk);
+  _ty = y - (y - _ty) * (nk / _tk);
+  _tk = nk;
+  _draw();
+}
+
+function _showNodeInfo(node) {
+  document.getElementById('network-tooltip').style.opacity = '0';
+  const area = document.getElementById('nodeInfoArea');
+  const col = AREA_COLORS[node.area] || '#8aa8c0';
+
+  if (node.type === 'article') {
+    const art = ARTICLES.find(a => a.id === node.artId);
+    if (!art) return;
+    area.innerHTML = `
+      <div style="font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mist);margin-bottom:.4rem">${getJournalAbbr(art.journal)} · ${new Date(art.date).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:.98rem;line-height:1.4;margin-bottom:.5rem;color:var(--ink)">${art.title}</div>
+      <div style="font-size:.78rem;color:var(--mist);font-style:italic;margin-bottom:.75rem">${art.authors}</div>
+      ${art.abstract ? `<div style="font-size:.82rem;line-height:1.6;color:#555;margin-bottom:.75rem">${art.abstract.slice(0,280)}…</div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.75rem">${art.topics.map(t=>`<span class="tag ${getTopicClass(t)}">${t}</span>`).join('')}</div>
+      <a class="btn-primary" href="https://doi.org/${art.doi}" target="_blank" style="text-decoration:none;font-size:.8rem">View Article</a>`;
+    return;
+  }
+
+  const rel = ARTICLES.filter(a => a.topics.includes(node.label));
+  area.innerHTML = `
+    <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:.25rem;color:var(--ink)">${node.label}</div>
+    <div style="font-size:.75rem;margin-bottom:.75rem"><span style="color:${col};font-weight:600">${node.count} article${node.count!==1?'s':''}</span> <span style="color:var(--mist)">· ${node.area}</span></div>
+    <div style="display:grid;gap:.5rem">
+      ${rel.map(a => `
+        <div class="mini-card" onclick="openArticleModal(ARTICLES.find(x=>x.id===${a.id}))">
+          <div class="mini-card-title">${a.title}</div>
+          <div class="mini-card-meta">${getJournalAbbr(a.journal)} · ${new Date(a.date).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        </div>`).join('')}
+      ${!rel.length ? '<div style="color:var(--mist);font-size:.82rem">Connected through co-occurring topics.</div>' : ''}
+    </div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// FUTURE THEMES
+// ═══════════════════════════════════════════════════════════════════════
+function buildThemeCards() {
+  const container = document.getElementById('themeCards');
+  FUTURE_THEMES.forEach(theme => {
+    const card = document.createElement('div');
+    card.className = 'theme-card';
+    card.id = `theme-card-${theme.id}`;
+    card.innerHTML = `
+      <div class="theme-icon">${theme.icon}</div>
+      <div class="theme-title">${theme.title}</div>
+      <div class="theme-desc">${theme.description}</div>
+      <div class="theme-count">${theme.articleIds.length} related articles</div>
+    `;
+    card.onclick = () => showThemeDetail(theme);
+    container.appendChild(card);
+  });
+}
+
+function showThemeDetail(theme) {
+  // Update active card
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+  document.getElementById(`theme-card-${theme.id}`).classList.add('active');
+
+  const detail = document.getElementById('themeDetail');
+  const relArticles = ARTICLES.filter(a => theme.articleIds.includes(a.id));
+
+  const directionsHTML = theme.directions.map((d, i) => `
+    <div class="direction-item">
+      <div class="direction-number">${i+1}</div>
+      <div class="direction-text"><strong>${d.bold}</strong> ${d.text}</div>
+    </div>
+  `).join('');
+
+  const articlesHTML = relArticles.map(a => `
+    <div class="mini-card" onclick="openArticleModal(ARTICLES.find(x=>x.id===${a.id}))">
+      <div class="mini-card-title">${a.title}</div>
+      <div class="mini-card-meta">${getJournalAbbr(a.journal)} · ${a.authors.split(',')[0]} et al. · ${new Date(a.date).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+    </div>
+  `).join('');
+
+  detail.innerHTML = `
+    <div style="margin-bottom:1rem">
+      <div style="margin-bottom:0.5rem"><span class="theme-icon">${theme.icon}</span></div>
+      <h3>${theme.title}</h3>
+      <p style="font-size:0.85rem;color:var(--mist);margin-top:0.4rem;line-height:1.6">${theme.description}</p>
+    </div>
+
+    <div style="margin-bottom:1.5rem">
+      <div class="filter-label" style="margin-bottom:0.75rem">Suggested Future Research Directions</div>
+      <div class="future-directions">${directionsHTML}</div>
+    </div>
+
+    <div>
+      <div class="filter-label" style="margin-bottom:0.75rem">Supporting Articles (${relArticles.length})</div>
+      <div class="related-articles-mini">${articlesHTML}</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BRAINSTORM
+// ═══════════════════════════════════════════════════════════════════════
+function runBrainstorm() {
+  const input = document.getElementById('brainstormInput').value.trim();
+  if (!input) return;
+
+  const output = document.getElementById('brainstormOutput');
+  output.innerHTML = '<div style="color:var(--mist);font-size:0.85rem;padding:1rem">Generating ideas…</div>';
+
+  setTimeout(() => {
+    const results = generateBrainstormResults(input);
+    output.innerHTML = '';
+    results.forEach((section, i) => {
+      setTimeout(() => {
+        const div = document.createElement('div');
+        div.className = 'output-section';
+        div.innerHTML = `
+          <div class="output-section-header">${section.icon} ${section.title}</div>
+          <div class="output-section-body">
+            <div class="output-list">
+              ${section.items.map(item => `<div class="output-item">${item}</div>`).join('')}
+            </div>
+          </div>
+        `;
+        output.appendChild(div);
+      }, i * 150);
+    });
+  }, 400);
+}
+
+function generateBrainstormResults(input) {
+  const inputLower = input.toLowerCase();
+
+  // Find relevant articles
+  const relevant = ARTICLES.filter(a => {
+    const searchStr = (a.title + a.abstract + a.topics.join(' ')).toLowerCase();
+    const keywords = inputLower.split(' ').filter(w => w.length > 3);
+    return keywords.some(k => searchStr.includes(k));
+  }).slice(0, 6);
+
+  // Find relevant themes
+  const relThemes = FUTURE_THEMES.filter(t => {
+    const searchStr = (t.title + t.description).toLowerCase();
+    const keywords = inputLower.split(' ').filter(w => w.length > 4);
+    return keywords.some(k => searchStr.includes(k));
+  });
+
+  // Detect topic area
+  const detectArea = () => {
+    if (inputLower.includes('ai') || inputLower.includes('tech') || inputLower.includes('digital')) return 'ai';
+    if (inputLower.includes('gender') || inputLower.includes('women') || inputLower.includes('female')) return 'gender';
+    if (inputLower.includes('transform')) return 'transformational';
+    if (inputLower.includes('lmx') || inputLower.includes('leader-member') || inputLower.includes('exchange')) return 'lmx';
+    if (inputLower.includes('ethic') || inputLower.includes('abus') || inputLower.includes('dark')) return 'ethics';
+    if (inputLower.includes('wellb') || inputLower.includes('health') || inputLower.includes('burnout')) return 'wellbeing';
+    if (inputLower.includes('remote') || inputLower.includes('hybrid') || inputLower.includes('virtual')) return 'remote';
+    if (inputLower.includes('ceo') || inputLower.includes('strateg') || inputLower.includes('upper echelon')) return 'ceo';
+    if (inputLower.includes('follow')) return 'followership';
+    if (inputLower.includes('team') || inputLower.includes('group') || inputLower.includes('collective')) return 'teams';
+    if (inputLower.includes('voice') || inputLower.includes('silence') || inputLower.includes('speak up')) return 'voice';
+    if (inputLower.includes('emotion') || inputLower.includes('affect') || inputLower.includes('mood')) return 'emotion';
+    return 'general';
+  };
+
+  const area = detectArea();
+
+  const AREA_SUGGESTIONS = {
+    ai: [
+      "How do different <strong>leadership styles</strong> (transformational vs. transactional) interact with AI adoption and leader-AI collaboration outcomes?",
+      "What happens when leader AI recommendations conflict with leader judgment? How do followers react to leaders who <strong>override vs. accept AI advice</strong>?",
+      "Explore <strong>algorithmic authority</strong>: when do followers trust AI vs. leader recommendations, and how does this vary by task domain?",
+      "Are there personality moderators of effective <strong>leader-AI teaming</strong>? Is conscientiousness or openness more important?",
+      "How does leader-AI collaboration affect <strong>follower autonomy and psychological empowerment</strong> over time?"
+    ],
+    gender: [
+      "Apply the observer-focused bias model (Oh et al., 2026) to specific organizational contexts — what <strong>observer motives</strong> are most potent in male-dominated industries?",
+      "The 'competence shield' study (Feng et al., 2026) opens questions: what other attributes besides competence can offset the <strong>dominance penalty</strong> for women?",
+      "Research on how gender bias <strong>compounds at different pipeline stages</strong> — from hiring to promotion to C-suite — using longitudinal archival designs.",
+      "Examine the <strong>intersectionality gap</strong>: how does race x gender x age shape leadership evaluations beyond gender alone?",
+      "Test how virtual collaboration behaviors by leaders can signal inclusion to gender minorities in <strong>remote/hybrid settings</strong> (building on Schertler et al., 2026)."
+    ],
+    transformational: [
+      "The anticipated guilt mechanism (Li et al., 2026) reveals a dark side. When does transformational leadership motivate through <strong>guilt vs. positive mechanisms</strong>, and what moderates this?",
+      "Research transformational leadership combined with <strong>directive behavior</strong> (Scanlon et al., 2026): under what conditions is behavioral complementarity most functional?",
+      "Examine how <strong>follower personality</strong> (particularly conscientiousness and neuroticism) shapes responses to transformational leadership's guilt-inducing effects.",
+      "Test transformational leadership in <strong>AI-augmented work contexts</strong>: does the vision-communication function of TFL translate to human-AI teaming environments?",
+      "Study transformational leadership across <strong>skip-level configurations</strong> (Schilpzand et al., 2026): how do distal TFL effects differ from proximal ones?"
+    ],
+    lmx: [
+      "Epitropaki et al. (2026) show LMX differentiation trickles out to customers. Extend this to <strong>other external stakeholders</strong> (suppliers, regulators, community members).",
+      "Test how <strong>remote work</strong> changes the formation, maintenance, and differentiation of LMX relationships — do digital interaction patterns substitute for in-person cues?",
+      "Examine the <strong>evolutionary dynamics</strong> of LMX: when do high-quality relationships erode after triggering events (envy, knowledge theft, supervisor change)?",
+      "Apply LMX research to <strong>skip-level relationships</strong>: do employees have meaningful exchange relationships with leaders two levels above, and how do these differ from proximal LMX?",
+      "Investigate how <strong>AI-mediated communication</strong> shapes LMX development — do leader messages filtered through AI tools feel less personal or authentic to followers?"
+    ],
+    ethics: [
+      "Mishra & Uppal (2026) propose a UPB institutionalization model. Test it empirically — what <strong>leader behaviors</strong> most accelerate vs. prevent UPB normalization?",
+      "Design intervention research to disrupt <strong>organizational silence cycles</strong> around harassment (Workman-Stark et al., 2026) across different national cultures.",
+      "Study <strong>recovery trajectories</strong> of teams after abusive supervision episodes: what leader behaviors, organizational structures, or time patterns enable team healing?",
+      "Test when and how employees who witness dark leadership develop <strong>moral resilience vs. moral disengagement</strong> — and what leadership conditions explain this divergence.",
+      "Research the role of <strong>organizational justice</strong> in interrupting or sustaining cycles of abusive leadership — specifically how procedural justice perceptions moderate abuse effects."
+    ],
+    wellbeing: [
+      "Hildenbrand et al. (2026) identify key moderators of leader mental health training. Design <strong>field experiments</strong> testing training effectiveness across frontline vs. senior leaders.",
+      "Lebel et al. (2026) show negative emotions can be functional. When and how do leaders <strong>strategically deploy negative emotions</strong> (guilt, anger, fear) to motivate followers?",
+      "Research <strong>leader recovery experiences</strong> specifically: which recovery activities (detachment, mastery, social connection) most effectively restore leader capacity for next-day effectiveness?",
+      "Feng et al. (2026) extend mindful leadership to followers' families. Map the full <strong>social reach of leader mindfulness</strong> to communities, physical health, and non-work relationships.",
+      "Study <strong>leader burnout trajectories</strong> across career stages using intensive longitudinal designs — when are leaders most vulnerable and what buffering resources matter most?"
+    ],
+    remote: [
+      "Schertler et al. (2026) show remote work hinders inclusion cues. Identify the <strong>specific virtual behaviors</strong> (meeting structure, channel choice, response speed) that most effectively signal inclusion.",
+      "Design daily diary studies tracking how leaders' <strong>remote leadership behaviors</strong> shape follower within-person daily energy, engagement, and recovery (building on Parker et al., 2026).",
+      "Research <strong>cultural variation</strong> in optimal remote leadership behaviors — do high-power-distance cultures require different virtual leadership approaches than egalitarian ones?",
+      "Examine <strong>leader boundary management</strong> as a modeling mechanism: do leader work-life boundary behaviors shape follower boundary enactment in hybrid teams?",
+      "Study how hybrid work's <strong>role boundary blurring</strong> (Feldner et al., 2026) changes trust formation and professional relationship initiation between leaders and followers."
+    ],
+    ceo: [
+      "Neville et al. (2026) introduce CEO passion alongside values. Test how these <strong>motivational attributes interact</strong> with environmental uncertainty in driving stakeholder responsiveness.",
+      "Thatchenkery (2026) links executive experience to foresight. Investigate <strong>which specific experience types</strong> (industry breadth, firm size variation, crisis exposure) build competitor foresight most effectively.",
+      "Xu et al. (2026) show overconfidence helps in acquisition waves. Map the full <strong>boundary conditions of CEO overconfidence</strong>: under which market, industry, and firm contexts does it help vs. hurt?",
+      "Research how CEO <strong>value imprinting at critical events</strong> (IPO, M&A, major crisis) shapes long-term organizational culture and leadership succession patterns.",
+      "Study how social media changes <strong>CEO communication and authentic leadership</strong> (Putri et al., 2026): when does CEO social media engagement build vs. undermine organizational trust?"
+    ],
+    followership: [
+      "Sheng et al. (2026) validate the FFNI with six follower needs. Research how <strong>follower need profiles vary</strong> by organizational level, culture, career stage, and industry.",
+      "Test how the six follower needs <strong>differentially predict</strong> leader endorsement, LMX quality, and voice behavior across different leadership styles.",
+      "Examine self-leadership (Smolka & Heugens, 2026) as a <strong>followership substitute</strong>: when do high self-leaders need less from formal leaders, and what organizational conditions support this?",
+      "Research <strong>follower identity development</strong> longitudinally: how do early career follower experiences shape later leader identity and self-conceptualization?",
+      "Investigate how evolutionary followership psychology shapes follower responses to <strong>AI systems as 'leaders'</strong>: do followers apply the same attribution processes to AI recommendations?"
+    ],
+    teams: [
+      "Acton et al. (2026) show collective leadership emerges through dual processes. Design <strong>longitudinal behavioral studies</strong> tracking these emergence patterns in real teams over time.",
+      "Research how <strong>stretch goal-setting</strong> (Pan et al., 2026) interacts with leader support behaviors: when do leaders help teams resource-match to ambitious goals vs. when do they let teams struggle?",
+      "Examine how Schilpzand et al.'s (2026) <strong>skip-level leadership</strong> shapes team psychological safety: do distal leaders reduce or enhance local leader authority?",
+      "Study <strong>collective leadership development</strong> in intervention contexts: can teams be trained to distribute leadership more effectively, and what leader behaviors facilitate this?",
+      "Investigate how <strong>team composition diversity</strong> affects the emergence of collective vs. hierarchical leadership patterns within teams."
+    ],
+    voice: [
+      "Song et al. (2026) show dominant leaders backfire when soliciting voice. Test this with a <strong>full typology of leader behaviors</strong>: which leaders are best positioned to solicit authentic voice?",
+      "Research the Liu et al. (2026) U-shaped LOC-voice relationship in <strong>different cultural contexts</strong>: does this curvilinear pattern hold in high power-distance cultures?",
+      "Examine how <strong>AI-augmented decision environments</strong> shape employee voice: are employees more or less likely to voice prohibitive concerns when AI is involved in decisions?",
+      "Study how <strong>leader response to voice</strong> shapes subsequent voice behavior longitudinally — particularly when leaders initially ignore voice and then act on it later.",
+      "Test whether team voice climate <strong>compensates for individual leader dominance</strong> in enabling prohibitive voice across different team configurations."
+    ],
+    emotion: [
+      "Shao (2026) proposes an IPO framework for leader emotion management. Design empirical studies <strong>directly observing leader emotion management behaviors</strong> naturalistically using behavioral coding.",
+      "Lebel et al. (2026) show negative emotions can be functional. Map when and how leaders should <strong>strategically express vs. suppress</strong> negative emotions to motivate followers effectively.",
+      "Research how leader emotion management capacity varies with <strong>cognitive load, time pressure, and moral complexity</strong> — when do leaders' emotional regulation resources become depleted?",
+      "Examine <strong>follower emotion co-regulation</strong>: how do followers' emotion regulation strategies interact with leader interpersonal emotion management in shaping team affect?",
+      "Study <strong>contempt dynamics</strong> (Miranda Reina & Welbourne, 2026) in leader-follower relationships: when does follower contempt toward a leader lead to resistance, exit, or undermining behavior?"
+    ],
+    general: [
+      "Search the current literature for <strong>construct redundancy</strong>: identify leadership constructs in recent articles that overlap substantially and could be integrated.",
+      "Review how recent articles treat <strong>causal inference</strong> — do they follow Dietz's (2026) recommendations for causal constructs, and where are gaps?",
+      "Map the <strong>methodological landscape</strong> of recent leadership research: what new methods (ESM, ABM, natural language processing) are emerging and which topics lack methodological innovation?",
+      "Identify <strong>cross-level dynamics</strong> in recent leadership research — which findings at the individual level need replication at team or organizational levels?",
+      "Examine which leadership theories appear most frequently across recent articles and which <strong>theories are underused</strong> relative to the phenomenon they could explain."
+    ]
+  };
+
+  const suggestions = AREA_SUGGESTIONS[area] || AREA_SUGGESTIONS.general;
+
+  const sections = [
+    {
+      icon: 'Articles',
+      title: 'Related Articles in Current Literature',
+      items: relevant.length ? relevant.map(a =>
+        `<strong>${a.title.slice(0,70)}…</strong><br><span style="font-size:0.78rem;color:var(--mist)">${getJournalAbbr(a.journal)} · ${a.authors.split(',')[0]} et al.</span>`
+      ) : ['No close matches found in the past 90-day dataset. Try broader keywords.']
+    },
+    {
+      icon: 'Future Directions',
+      title: 'Potential Research Questions / Future Directions',
+      items: suggestions
+    },
+    {
+      icon: 'Theory',
+      title: 'Relevant Theoretical Frameworks to Consider',
+      items: getTheories(area)
+    },
+    {
+      icon: 'Methods',
+      title: 'Methodological Suggestions',
+      items: getMethods(area)
+    },
+    {
+      icon: 'DVs',
+      title: 'Common Dependent Variables in This Area',
+      items: getDVs(area)
+    }
+  ];
+
+  return sections;
+}
+
+function getTheories(area) {
+  const theories = {
+    ai: ["Social exchange theory — applied to leader-AI vs. leader-follower exchanges", "Upper echelons theory — how leader characteristics shape AI adoption decisions", "Technology acceptance model — adapted for leaders making AI adoption choices", "Conservation of resources theory — leader AI use as resource gain/conservation"],
+    gender: ["Expectation states theory — status characteristics and leader evaluation", "Social role theory — gender-based behavioral expectations for leaders", "Status characteristics theory — how gender status generalizes to leadership contexts", "Intersectionality theory — overlapping identity systems in leadership evaluation"],
+    transformational: ["Self-determination theory — autonomy, competence, relatedness as TFL mechanisms", "Social learning theory — followers modeling leader behaviors", "Situational strength theory — when TFL behaviors are most vs. least influential", "Self-discrepancy theory — ideal vs. ought selves as TFL motivational levers (Li et al., 2026)"],
+    lmx: ["Social exchange theory — reciprocity as the engine of LMX development", "Social comparison theory — how LMX differentiation triggers intra-group comparisons", "Emotion contagion theory — how leader affect spreads through LMX networks", "Upper echelons theory — top leader LMX patterns cascading downward"],
+    ethics: ["Social learning theory — moral modeling and unethical behavior contagion", "Moral disengagement theory — cognitive mechanisms enabling ethical violations", "Moral foundations theory — loyalty vs. harm foundations explaining UPB (Mishra & Uppal, 2026)", "Terror management theory — existential threat as driver of in-group leadership loyalty"],
+    wellbeing: ["Conservation of resources theory — leader resource depletion and replenishment cycles", "Affective events theory — discrete events triggering leader emotional responses", "Resource allocation theory — how leaders distribute cognitive and emotional resources", "Social allostatic load theory — cumulative social stress in leadership roles"],
+    remote: ["Sociometer theory — inclusion signals and social belonging in remote settings", "Social presence theory — virtual media richness and psychological proximity", "Boundary theory — work-nonwork boundaries in distributed leadership contexts", "Social information processing theory — leader cue interpretation in mediated contexts"],
+    ceo: ["Upper echelons theory — CEO characteristics as proxies for cognition and values", "Behavioral theory of the firm — bounded rationality in top leader decision-making", "Resource dependency theory — CEO management of external dependencies", "Stakeholder theory — CEO values and multi-stakeholder responsiveness"],
+    followership: ["Evolutionary psychology — adaptive followership as a selected human trait", "Social identity theory — follower identification with leader as group prototype", "Implicit leadership theory — follower cognitive schemas for leader evaluation", "Role theory — follower role expectations and their intersection with leadership norms"],
+    teams: ["Complex adaptive systems theory — emergent leadership patterns in teams", "Dual-process theory — automatic vs. deliberate collective leadership emergence (Acton et al., 2026)", "Conservation of resources theory — team resource scarcity and collective leadership emergence", "Adaptive structuration theory — how teams adapt leadership structures to task demands"],
+    voice: ["Expectancy theory — perceived voice efficacy and leader response expectations", "Impression management theory — voice as self-presentation strategy under leader dominance", "Person-environment fit — LOC-voice climate fit and prohibitive voice (Liu et al., 2026)", "Social cognitive theory — self-efficacy as voice behavior predictor"],
+    emotion: ["Emotional labor theory — surface vs. deep acting in leader emotion management", "Interpersonal emotion regulation theory — leader regulation of others' emotions (Shao, 2026)", "Affective events theory — discrete events triggering leader and follower emotions", "Social functional approach to emotions — emotions as social signals in leader-follower contexts"],
+    general: ["Social exchange theory", "Conservation of resources theory", "Upper echelons theory", "Situational strength theory", "Self-determination theory"]
+  };
+  return theories[area] || theories.general;
+}
+
+function getMethods(area) {
+  const methods = {
+    ai: ["Multi-wave, multi-source field studies tracking leader-AI adoption and team outcomes", "Experimental vignette designs manipulating AI recommendation presence/absence", "Experience sampling to capture daily within-person leader-AI collaboration variation", "Natural language processing to analyze leader communication patterns in AI-mediated contexts"],
+    gender: ["Multi-source field studies with independent rater panels to reduce common method variance", "Audit studies with matched resumes varying gender and leader prototype cues", "Experience sampling to capture daily fluctuations in gender bias expression", "Cross-national designs comparing gender bias patterns across power-distance cultures"],
+    transformational: ["Behavioral observation studies coding specific TFL micro-behaviors in naturalistic settings", "Longitudinal designs tracking TFL effects on follower outcomes across role transitions", "Multi-source designs separating leader self-report from follower perception of TFL", "Experimental manipulation of TFL vision communication vs. guilt-induction components"],
+    lmx: ["Intensive longitudinal designs capturing LMX formation over time (daily or weekly surveys)", "Social network analysis mapping LMX differentiation patterns within and across teams", "Video-coded behavioral studies of actual leader-follower interaction quality", "Dyadic multilevel modeling accounting for interdependence in leader-follower pairs"],
+    ethics: ["Field experiments testing ethics training and organizational climate interventions", "Qualitative longitudinal designs tracking ethical culture evolution under leadership change", "Experience sampling capturing daily moral experiences and ethical decision points", "Archival natural experiments (leadership changes, scandals) to examine causal ethics effects"],
+    wellbeing: ["Ecological momentary assessment capturing leader wellbeing fluctuations within and across days", "Randomized controlled trials testing leader-focused mental health and recovery interventions", "Actigraphy and physiological data combined with experience sampling for leader recovery research", "Longitudinal designs tracking leader wellbeing trajectories across career transitions"],
+    remote: ["Daily diary designs capturing within-person daily variation in remote leadership behaviors and follower outcomes", "Network analysis mapping virtual communication patterns and LMX formation in distributed teams", "Natural experiments leveraging COVID-19 policy variation to identify causal remote leadership effects", "Cross-cultural experience sampling comparing daily dynamics across national and organizational contexts"],
+    ceo: ["Archival designs leveraging CEO succession events as natural experiments", "Text mining of CEO communication (earnings calls, annual reports, social media) as behavioral proxies", "Experimental designs with simulated strategic decisions to manipulate CEO confidence levels", "Meta-analytic integration of upper echelons findings to identify boundary conditions"],
+    followership: ["Scale validation studies with diverse samples across cultures and organizational levels", "Experience sampling capturing daily follower needs and their activation by situational cues", "Behavioral coding of actual follower behavior in leader-follower interaction sequences", "Longitudinal designs tracking follower identity development across organizational socialization"],
+    teams: ["Agent-based modeling to formalize and test collective leadership emergence theories (Acton et al., 2026)", "Social network analysis at team level mapping leadership claim/grant dynamics", "Video coding of team interaction to capture behavioral antecedents of collective leadership", "Field experiments testing collective leadership development interventions in real teams"],
+    voice: ["Experience sampling capturing daily voice climate perceptions and voice behavior episodes", "Behavioral coding of actual voice behavior in meetings and team interactions", "Audit designs manipulating leader dominance and voice solicitation to test interaction effects", "Longitudinal organizational studies tracking voice climate change under leadership transitions"],
+    emotion: ["Naturalistic behavioral coding of leader interpersonal emotion management behaviors", "Physiological and behavioral multi-modal assessment of leader-follower emotion dynamics", "Experience sampling of daily leader emotion management episodes and follower emotional outcomes", "Experimental designs manipulating emotion management strategy (suppression vs. expression)"],
+    general: ["Multi-wave longitudinal designs to establish temporal precedence", "Multi-source data to reduce common method bias", "Experience sampling for within-person dynamic processes", "Meta-analysis to synthesize evidence and identify boundary conditions"]
+  };
+  return methods[area] || methods.general;
+}
+
+function getDVs(area) {
+  const dvs = {
+    ai: ["Team performance (task completion, creativity, error rates)", "Leader-team AI adoption and integration quality", "Follower autonomy and psychological empowerment", "Leader decision quality and cognitive load"],
+    gender: ["Leader evaluation (perceived competence, likeability, leadership endorsement)", "Hiring and promotion decisions", "Follower performance and job outcomes under female leaders", "Organizational diversity pipeline representation over time"],
+    transformational: ["Follower extra-role effort and OCB", "Follower psychological safety and team innovation", "Leader-follower trust and identification", "Team and organizational performance outcomes"],
+    lmx: ["Follower job performance and OCB", "Follower career outcomes (promotion, salary, development)", "Team psychological safety and voice", "Customer service quality and satisfaction"],
+    ethics: ["Employee voice and whistle-blowing behavior", "Follower wellbeing and psychological safety", "Organizational deviance and unethical behavior rates", "Organizational reputation and trust"],
+    wellbeing: ["Leader mental health and burnout symptoms", "Leader self-efficacy and cognitive functioning", "Follower wellbeing outcomes downstream of leader wellbeing", "Organizational climate for wellbeing"],
+    remote: ["Employee inclusion perceptions and organizational identification", "Daily energy, engagement, and recovery quality", "LMX development and maintenance in virtual contexts", "Team creativity and collaboration outcomes"],
+    ceo: ["Firm financial performance and survival", "Stakeholder satisfaction and ESG outcomes", "Innovation and strategic decision quality", "Organizational culture and employee outcomes"],
+    followership: ["Leader endorsement and emergence", "Follower LMX quality and organizational commitment", "Follower proactivity and voice behavior", "Follower career development and advancement"],
+    teams: ["Team performance (objective and subjective)", "Team psychological safety and voice", "Collective leadership breadth and fluidity", "Team learning and adaptation"],
+    voice: ["Prohibitive and promotive voice frequency", "Voice climate perceptions", "Follower psychological safety", "Organizational learning and innovation outcomes"],
+    emotion: ["Follower emotional wellbeing and affective states", "Team emotional climate and collective affect", "Leader-follower relationship quality", "Leader and follower performance outcomes"],
+    general: ["Job performance (task, contextual, adaptive)", "Well-being and burnout", "Organizational commitment and turnover intention", "Team and organizational outcomes"]
+  };
+  return dvs[area] || dvs.general;
+}
+
+function clearBrainstorm() {
+  document.getElementById('brainstormInput').value = '';
+  document.getElementById('brainstormOutput').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PANEL SWITCHING
+// ═══════════════════════════════════════════════════════════════════════
+function switchPanel(name, btn) {
+  ['panel-overview','panel-network','panel-themes','panel-brainstorm'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active');
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (name === 'overview') {
+    const p = document.getElementById('panel-overview');
+    p.style.display = 'block'; p.classList.add('active');
+  } else if (name === 'network') {
+    const p = document.getElementById('panel-network');
+    p.style.display = 'grid'; p.classList.add('active');
+    requestAnimationFrame(() => requestAnimationFrame(() => buildNetwork()));
+  } else if (name === 'themes') {
+    const p = document.getElementById('panel-themes');
+    p.style.display = 'grid'; p.classList.add('active');
+  } else if (name === 'brainstorm') {
+    const p = document.getElementById('panel-brainstorm');
+    p.style.display = 'block'; p.classList.add('active');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// CUSTOM ARTICLES — add, persist, delete
+// ═══════════════════════════════════════════════════════════════════════
+const CUSTOM_STORAGE_KEY = 'leadership-hub-custom-articles';
+let customArticles = [];
+
+async function loadCustomArticles() {
+  try {
+    const result = await window.storage.get(CUSTOM_STORAGE_KEY);
+    if (result && result.value) {
+      customArticles = JSON.parse(result.value);
+      customArticles.forEach(a => {
+        if (!ARTICLES.find(x => x.id === a.id)) ARTICLES.push(a);
+      });
+    }
+  } catch(e) {
+    // No saved articles yet — that's fine
+    customArticles = [];
+  }
+  renderCustomArticlesList();
+  if (customArticles.length > 0) {
+    document.getElementById('customArticlesMgmt').style.display = 'block';
+  }
+}
+
+async function saveCustomArticles() {
+  try {
+    await window.storage.set(CUSTOM_STORAGE_KEY, JSON.stringify(customArticles));
+  } catch(e) {
+    console.warn('Storage save failed:', e);
+  }
+}
+
+function toggleAddForm() {
+  const form = document.getElementById('addArticleForm');
+  const icon = document.getElementById('addFormToggleIcon');
+  const open = form.style.display === 'none';
+  form.style.display = open ? 'block' : 'none';
+  icon.textContent = open ? '−' : '+';
+  if (open) {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('af-date').value = today;
+  }
+  clearAddForm();
+}
+
+function clearAddForm() {
+  ['af-title','af-authors','af-journal','af-doi','af-abstract','af-topics','af-methods'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('af-error').style.display = 'none';
+}
+
+function submitAddArticle() {
+  const title   = document.getElementById('af-title').value.trim();
+  const authors = document.getElementById('af-authors').value.trim();
+  const journal = document.getElementById('af-journal').value.trim();
+  const doi     = document.getElementById('af-doi').value.trim();
+  const dateVal = document.getElementById('af-date').value;
+  const abstract= document.getElementById('af-abstract').value.trim();
+  const topicsRaw = document.getElementById('af-topics').value.trim();
+  const methodsRaw= document.getElementById('af-methods').value.trim();
+
+  const errEl = document.getElementById('af-error');
+  if (!title || !authors || !journal) {
+    errEl.textContent = 'Title, authors, and journal are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const topics  = topicsRaw  ? topicsRaw.split(',').map(s => s.trim()).filter(Boolean)  : ['Leadership (General)'];
+  const methods = methodsRaw ? methodsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const date    = dateVal || new Date().toISOString().split('T')[0];
+
+  // Generate a unique id above the existing range
+  const maxId = Math.max(...ARTICLES.map(a => a.id), 1000);
+  const newId = maxId + 1;
+
+  // Derive journalCode for badge coloring
+  const abbr = getJournalAbbr(journal).toLowerCase().replace(/[^a-z]/g,'');
+  const journalCode = abbr;
+
+  const article = {
+    id: newId,
+    title,
+    authors,
+    journal,
+    journalCode,
+    doi: doi || '10.0000/manual',
+    date,
+    abstract,
+    topics,
+    methods,
+    custom: true,
+  };
+
+  ARTICLES.push(article);
+  customArticles.push(article);
+  saveCustomArticles();
+
+  // Refresh UI
+  buildFilters();
+  applyFilters();
+  renderCustomArticlesList();
+  document.getElementById('customArticlesMgmt').style.display = 'block';
+
+  // Reset network so it re-renders with the new article
+  networkBuilt = false;
+  if (_sim) { _sim.stop(); _sim = null; }
+  if (_cvs && _cvs.parentNode) { _cvs.parentNode.removeChild(_cvs); _cvs = null; }
+
+  // Close form and show confirmation
+  toggleAddForm();
+  showAddConfirmation(title);
+}
+
+function showAddConfirmation(title) {
+  const bar = document.getElementById('statsBar');
+  const orig = bar.style.background;
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--slate);color:var(--gold-light);padding:0.6rem 1.25rem;border-radius:6px;font-size:0.82rem;z-index:500;border:1px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+  msg.textContent = `"${title.slice(0,50)}${title.length>50?'…':''}" added successfully`;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+function renderCustomArticlesList() {
+  const list = document.getElementById('customArticlesList');
+  if (!list) return;
+  if (!customArticles.length) {
+    document.getElementById('customArticlesMgmt').style.display = 'none';
+    return;
+  }
+  document.getElementById('customArticlesMgmt').style.display = 'block';
+  list.innerHTML = customArticles.map(a => `
+    <div class="custom-art-row">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;color:var(--ink);line-height:1.4;margin-bottom:0.15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.title}</div>
+        <div style="color:var(--mist);font-size:0.72rem;">${getJournalAbbr(a.journal)} · ${a.authors.split(',')[0]}</div>
+      </div>
+      <button class="custom-art-del" onclick="deleteCustomArticle(${a.id})" title="Remove article">×</button>
+    </div>
+  `).join('');
+}
+
+async function deleteCustomArticle(id) {
+  const idx = customArticles.findIndex(a => a.id === id);
+  if (idx === -1) return;
+  customArticles.splice(idx, 1);
+  const artIdx = ARTICLES.findIndex(a => a.id === id);
+  if (artIdx !== -1) ARTICLES.splice(artIdx, 1);
+  await saveCustomArticles();
+
+  // Refresh
+  buildFilters();
+  applyFilters();
+  renderCustomArticlesList();
+  networkBuilt = false;
+  if (_sim) { _sim.stop(); _sim = null; }
+  if (_cvs && _cvs.parentNode) { _cvs.parentNode.removeChild(_cvs); _cvs = null; }
+}
+
+init();
+</script>
+</body>
+</html>
